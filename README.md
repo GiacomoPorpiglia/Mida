@@ -120,6 +120,11 @@ I would like to put my engine on [CCRL(https://ccrl.chessdom.com/ccrl/4040/)], a
 
 
 ## How to use
+To compile the code, just run the command:
+```
+g++ mida_engine.cpp -O2 -o bin/mida_engine.exe
+```
+
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
 The most useful are:
 
