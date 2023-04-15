@@ -4,8 +4,8 @@
 #include "constants.h"
 #include "bb_helpers.h"
 #include "game_constants.h"
-#include "board.h"
-#include "board.cpp"
+#include "Board/board.h"
+#include "Board/board.cpp"
 
 Board board = Board(startpos);
 

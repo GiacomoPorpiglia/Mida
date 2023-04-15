@@ -15,8 +15,6 @@
 
 using namespace std;
 
-// #include "Board.h"
-// #include "Board.cpp"
 
 void init_all()
 {
