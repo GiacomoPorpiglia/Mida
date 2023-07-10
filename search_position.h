@@ -118,7 +118,11 @@ static inline bool ok_to_reduce(MOVE &move)
 // returns true if the position is  draw for unsufficient material
 static inline bool isInsufficientMaterial()
 {
-    return ((board.whitePiecesValue <= 400) && (board.blackPiecesValue <= 400) && !board.whiteBitboards[5] && !board.blackBitboards[5]);
+    return ((board.whitePiecesValue <= pieceValues[B]) && (board.blackPiecesValue <= pieceValues[B]) && !pieces_bb[WHITE][P] && !pieces_bb[BLACK][P]);
+}
+
+static inline bool isEndgame() {
+    return (board.whitePiecesValue+board.blackPiecesValue < 2000);
 }
 
 // negamax alpha beta search
@@ -175,6 +179,8 @@ static inline int search(int depth, int alpha, int beta, int doNull)
 
     if (board.isInCheck)
         depth++;
+
+    doNull = doNull && !isEndgame(); // if we are in late endgame we disable the null move pruning (for Zugzwang type of positions) (v1.1)
 
     // null move pruning
     if (doNull && (depth >= 3) && !board.isInCheck && moveList.count && ply)

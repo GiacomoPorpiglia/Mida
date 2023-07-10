@@ -48,8 +48,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
         board.whitePiecesValue += pieceValues[newPieceType] - pieceValues[pieceType];
         // still missing particular case of en passant(not considered as capture in this utilization, we will cover it in en passant section)
 
-        pop_bit(board.whiteBitboards[pieceType], squareFrom);
-        set_bit(board.whiteBitboards[newPieceType], squareTo);
+        pop_bit(pieces_bb[WHITE][pieceType], squareFrom);
+        set_bit(pieces_bb[WHITE][newPieceType], squareTo);
 
         // en passant
         if (pieceType == P && squareTo == getEnPassantSquare(board.boardSpecs))
@@ -63,7 +63,7 @@ static inline void playMove(MOVE move, int capturedPieceType)
             // update piece values in case of en passant
             board.blackPiecesValue -= pieceValues[P];
 
-            pop_bit(board.blackBitboards[P], squareTo - 8);
+            pop_bit(pieces_bb[BLACK][P], squareTo - 8);
             board.allPieces[squareTo - 8] = -1;
         }
         // castle
@@ -90,8 +90,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
                 hash_key ^= piece_keys[1][R][7];
                 hash_key ^= piece_keys[1][R][5];
 
-                pop_bit(board.whiteBitboards[R], 7);
-                set_bit(board.whiteBitboards[R], 5);
+                pop_bit(pieces_bb[WHITE][R], 7);
+                set_bit(pieces_bb[WHITE][R], 5);
 
                 board.allPieces[7] = -1;
                 board.allPieces[5] = 2;
@@ -106,8 +106,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
                 hash_key ^= piece_keys[1][R][0];
                 hash_key ^= piece_keys[1][R][3];
 
-                pop_bit(board.whiteBitboards[R], 0);
-                set_bit(board.whiteBitboards[R], 3);
+                pop_bit(pieces_bb[WHITE][R], 0);
+                set_bit(pieces_bb[WHITE][R], 3);
 
                 board.allPieces[0] = -1;
                 board.allPieces[3] = 2;
@@ -126,7 +126,7 @@ static inline void playMove(MOVE move, int capturedPieceType)
             // update hash key
             hash_key ^= piece_keys[0][capturedPieceType][squareTo];
             // board.blackPieces[squareTo]=-1;
-            pop_bit(board.blackBitboards[capturedPieceType], squareTo);
+            pop_bit(pieces_bb[BLACK][capturedPieceType], squareTo);
         }
 
         if (pieceType == K)
@@ -181,8 +181,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
         board.blackPiecesValue += pieceValues[newPieceType] - pieceValues[pieceType];
         // still missing particular case of en passant(not considered as capture in this utilization, we will cover it in en passant section)
 
-        pop_bit(board.blackBitboards[pieceType], squareFrom);
-        set_bit(board.blackBitboards[newPieceType], squareTo);
+        pop_bit(pieces_bb[BLACK][pieceType], squareFrom);
+        set_bit(pieces_bb[BLACK][newPieceType], squareTo);
 
         // en passant
         if (pieceType == P && squareTo == getEnPassantSquare(board.boardSpecs))
@@ -196,7 +196,7 @@ static inline void playMove(MOVE move, int capturedPieceType)
             // update piece values in case of en passant
             board.whitePiecesValue -= pieceValues[P];
 
-            pop_bit(board.whiteBitboards[P], squareTo + 8);
+            pop_bit(pieces_bb[WHITE][P], squareTo + 8);
 
             board.allPieces[squareTo + 8] = -1;
         }
@@ -222,8 +222,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
                 hash_key ^= piece_keys[0][R][63];
                 hash_key ^= piece_keys[0][R][61];
 
-                pop_bit(board.blackBitboards[R], 63);
-                set_bit(board.blackBitboards[R], 61);
+                pop_bit(pieces_bb[BLACK][R], 63);
+                set_bit(pieces_bb[BLACK][R], 61);
 
                 board.allPieces[63] = -1;
                 board.allPieces[61] = 2;
@@ -238,8 +238,8 @@ static inline void playMove(MOVE move, int capturedPieceType)
                 hash_key ^= piece_keys[0][R][56];
                 hash_key ^= piece_keys[0][R][59];
 
-                pop_bit(board.blackBitboards[R], 56);
-                set_bit(board.blackBitboards[R], 59);
+                pop_bit(pieces_bb[BLACK][R], 56);
+                set_bit(pieces_bb[BLACK][R], 59);
 
                 board.allPieces[56] = -1;
                 board.allPieces[59] = 2;
@@ -259,7 +259,7 @@ static inline void playMove(MOVE move, int capturedPieceType)
             hash_key ^= piece_keys[1][capturedPieceType][squareTo];
 
             // board.whitePieces[squareTo]=-1;
-            pop_bit(board.whiteBitboards[capturedPieceType], squareTo);
+            pop_bit(pieces_bb[WHITE][capturedPieceType], squareTo);
         }
 
         if (pieceType == K)
@@ -330,8 +330,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
         // update piece value in case of promotion
         board.whitePiecesValue -= pieceValues[newPieceType] - pieceValues[oldPieceType];
         // still missing particular case of en passant(not considered as capture in this part, but in en passant move section)
-        pop_bit(board.whiteBitboards[newPieceType], squareTo);
-        set_bit(board.whiteBitboards[oldPieceType], squareFrom);
+        pop_bit(pieces_bb[WHITE][newPieceType], squareTo);
+        set_bit(pieces_bb[WHITE][oldPieceType], squareFrom);
 
         // en passant
         if (oldPieceType == P && squareTo == getEnPassantSquare(oldSpecs))
@@ -340,7 +340,7 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // piece value update for en passant
             board.blackPiecesValue += pieceValues[P];
 
-            set_bit(board.blackBitboards[P], squareTo - 8);
+            set_bit(pieces_bb[BLACK][P], squareTo - 8);
 
             board.allPieces[squareTo - 8] = 5;
         }
@@ -350,8 +350,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // kingside
             if (squareTo - squareFrom == 2)
             {
-                pop_bit(board.whiteBitboards[R], 5);
-                set_bit(board.whiteBitboards[R], 7);
+                pop_bit(pieces_bb[WHITE][R], 5);
+                set_bit(pieces_bb[WHITE][R], 7);
 
                 board.allPieces[7] = 2;
                 board.allPieces[5] = -1;
@@ -359,8 +359,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // queenside
             else
             {
-                pop_bit(board.whiteBitboards[R], 3);
-                set_bit(board.whiteBitboards[R], 0);
+                pop_bit(pieces_bb[WHITE][R], 3);
+                set_bit(pieces_bb[WHITE][R], 0);
 
                 board.allPieces[0] = 2;
                 board.allPieces[3] = -1;
@@ -369,7 +369,7 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
 
         if (capturedPieceType != -1)
         {
-            set_bit(board.blackBitboards[capturedPieceType], squareTo);
+            set_bit(pieces_bb[BLACK][capturedPieceType], squareTo);
             // update piece values in case of capture
             board.blackPiecesValue += pieceValues[capturedPieceType];
         }
@@ -382,8 +382,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
         board.blackPiecesValue -= pieceValues[newPieceType] - pieceValues[oldPieceType];
         // still missing particular case of en passant(not considered as capture in this utilization, we will cover it in en passant section)
 
-        pop_bit(board.blackBitboards[newPieceType], squareTo);
-        set_bit(board.blackBitboards[oldPieceType], squareFrom);
+        pop_bit(pieces_bb[BLACK][newPieceType], squareTo);
+        set_bit(pieces_bb[BLACK][oldPieceType], squareFrom);
 
         // en passant
         if (oldPieceType == P && squareTo == getEnPassantSquare(oldSpecs))
@@ -392,7 +392,7 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // piece value update for en passant
             board.whitePiecesValue += pieceValues[P];
 
-            set_bit(board.whiteBitboards[P], (squareTo + 8));
+            set_bit(pieces_bb[WHITE][P], (squareTo + 8));
 
             board.allPieces[squareTo + 8] = 5;
         }
@@ -402,8 +402,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // kingside
             if (squareTo - squareFrom == 2)
             {
-                pop_bit(board.blackBitboards[2], 61);
-                set_bit(board.blackBitboards[2], 63);
+                pop_bit(pieces_bb[BLACK][2], 61);
+                set_bit(pieces_bb[BLACK][2], 63);
 
                 board.allPieces[63] = 2;
                 board.allPieces[61] = -1;
@@ -411,8 +411,8 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
             // queenside
             else
             {
-                pop_bit(board.blackBitboards[R], 59);
-                set_bit(board.blackBitboards[R], 56);
+                pop_bit(pieces_bb[BLACK][R], 59);
+                set_bit(pieces_bb[BLACK][R], 56);
 
                 board.allPieces[56] = 2;
                 board.allPieces[59] = -1;
@@ -420,7 +420,7 @@ static inline void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, in
         }
         if (capturedPieceType != -1)
         {
-            set_bit(board.whiteBitboards[capturedPieceType], squareTo);
+            set_bit(pieces_bb[WHITE][capturedPieceType], squareTo);
             // update piece value in case of capture
             board.whitePiecesValue += pieceValues[capturedPieceType];
             // board.whitePieces[squareTo] = capturedPieceType;

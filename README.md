@@ -122,7 +122,7 @@ I would like to put my engine on [CCRL(https://ccrl.chessdom.com/ccrl/4040/)], a
 ## How to use
 To compile the code, just run the command:
 ```
-g++ mida_engine.cpp -O2 -o bin/mida_engine.exe
+g++ mida_engine.cpp -O3 -w -o bin/mida_engine.exe
 ```
 
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
@@ -133,3 +133,11 @@ The most useful are:
 * go depth <search_depth> to get the best move according to the engine up to a certain depth <search_depth>, starting from a previously loaded position
 
 
+
+
+# v1.1 updates
+The main updates in v1.1 are:
+
+* 10% increment in computed nodes per second.
+* New evaluation function (not in its parameters, but much more readable and easily changable).
+* Space evaluation and king on open flank.

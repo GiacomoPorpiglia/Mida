@@ -15,23 +15,17 @@
 
 using namespace std;
 
-
-void init_all()
-{
+void init_all() {
     init_random_keys();
     init_sliders_attacks(bishop);
     init_sliders_attacks(rook);
     clearTranspositionTable();
 }
 
-// rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-// 8/8/3p4/1Pp4r/1K3pk1/8/1R2P1P1/8 w - c6 0 1
-int main()
-{
 
+int main() {
     init_all();
     board.loadFenPosition(startpos);
-    // cout << evaluate();
     uci_loop();
 
     return 0;
