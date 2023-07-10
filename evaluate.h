@@ -13,26 +13,18 @@ const int maxEndgameWeight = 256;
 
 int endgameWeight;
 
-// function to interpolate between values, to have a smooth transition between mid-game and endgame evaluation
+// function to interpolate between values, to have a smooth transition between midgame and endgame evaluation
 static inline int fade(const int values[2])
 {
-    // 8 is the maximum endgame weight, 1 is the minimum
     return ((values[0] * (maxEndgameWeight - endgameWeight) + (values[1] * endgameWeight)) / maxEndgameWeight);
-    // int output = values[0] + ((values[1] - values[0]) / (4 - 1)) * (endgameWeight - 1);
-
 }
 
-// will be used in positional score function (made globally for memmory optimization)
-uint64_t white_occupancy = 0ULL;
-uint64_t black_occupancy = 0ULL;
 uint64_t occupancy = 0ULL;
-uint64_t white_pawn_bb = 0ULL;
-uint64_t black_pawn_bb = 0ULL;
 
 uint64_t attackedSquares;
 uint64_t xRayAttackedSquares;
 
-int square;
+int square, relativeSquare;
 int double_pawns;
 uint64_t bb;
 uint64_t virtualBishopMobility;
@@ -46,45 +38,23 @@ int queenPhase = 4;
 int totalPhase = 24;
 
 // function that returns a number 0-256 to calculate the game phase we are in
-//  the startpos is 0, and when no pieces except pawns and kings are on the board, this score is 256
+//  the startpos is 0, and when no pieces except pawns and kings are on the board, the endgameWeight is 256
 static inline int calculateEndgameWeight()
 {
     int phase = totalPhase;
-    phase -= count_bits(board.whiteBitboards[N]) * knightPhase;
-    phase -= count_bits(board.blackBitboards[N]) * knightPhase;
-    phase -= count_bits(board.whiteBitboards[B]) * bishopPhase;
-    phase -= count_bits(board.blackBitboards[B]) * bishopPhase;
-    phase -= count_bits(board.whiteBitboards[R]) * rookPhase;
-    phase -= count_bits(board.blackBitboards[R]) * rookPhase;
-    phase -= count_bits(board.whiteBitboards[Q]) * queenPhase;
-    phase -= count_bits(board.blackBitboards[Q]) * queenPhase;
+    phase -= count_bits(pieces_bb[WHITE][N]) * knightPhase;
+    phase -= count_bits(pieces_bb[BLACK][N]) * knightPhase;
+    phase -= count_bits(pieces_bb[WHITE][B]) * bishopPhase;
+    phase -= count_bits(pieces_bb[BLACK][B]) * bishopPhase;
+    phase -= count_bits(pieces_bb[WHITE][R]) * rookPhase;
+    phase -= count_bits(pieces_bb[BLACK][R]) * rookPhase;
+    phase -= count_bits(pieces_bb[WHITE][Q]) * queenPhase;
+    phase -= count_bits(pieces_bb[BLACK][Q]) * queenPhase;
 
     return (phase * maxEndgameWeight + (totalPhase / 2)) / totalPhase;
 }
-
-int whiteAttackingPiecesCount = 0;
-int blackAttackingPiecesCount = 0;
-int whiteValueOfAttacks = 0;
-int blackValueOfAttacks = 0;
-int whitePawnCount = 0;
-int blackPawnCount = 0;
-int file;
-int score;
-uint64_t whiteKingRing;
-uint64_t blackKingRing;
-uint64_t excludedFromWhiteMobility;
-uint64_t excludedFromBlackMobility;
-
-//space
-uint64_t centerFiles = file_masks[2] | file_masks[3] | file_masks[4] | file_masks[5];
-uint64_t whiteSpaceMask = centerFiles & (rank_masks[8 * 1] | rank_masks[8 * 2] | rank_masks[8 * 3]);
-uint64_t blackSpaceMask = centerFiles & (rank_masks[8 * 6] | rank_masks[8 * 5] | rank_masks[8 * 4]);
-uint64_t whiteSafe, blackSafe, whiteBehind, blackBehind;
-uint64_t defended, weak, stronglyProtected, nonPawnWhite, nonPawnBlack;
-int blockedCount;
-
-int passedRank;
-int whiteKingSq, blackKingSq;
+int file, score, passedRank;
+uint64_t defended, weak, stronglyProtected;
 
 static inline int distance(int sq1, int sq2) {
     return std::max(abs((sq1%8)-(sq2%8)), abs(sq1/8 - sq2/8));
@@ -94,450 +64,350 @@ static inline int kingProximity(int kingSq, int sq) {
     return std::min(distance(kingSq, sq), 5);
 }
 
-// function that evaluates the position in terms of piece activity, piece position and other parameters
-static inline int positionalScore()
-{
+
+
+
+uint64_t *passed_mask;
+int Us = 1;
+int Them = 0;
+int Up;
+uint64_t excludedFromMobility, mobilityArea, lowRanks, spaceMask, behind, blockedPawns;
+uint64_t enemyKingRing, ourKingRing;
+int attackingPiecesCount, valueOfAttacks;
+int ourKingSq, enemyKingSq;
+int bonus;
+
+
+uint64_t nonPawnEnemies, safe;
+uint64_t squaresToQueen, unsafeSquares;
+
+uint64_t passed, opposed, blocked, stoppers, lever, leverPush, doubled, neighbours, phalanx, support, backward, ourPawns, theirPawns;
+
+static inline int get_relative_square(int square) {
+    if(Us==1) return square;
+    return FLIP(square);
+}
+
+uint64_t Shift(uint64_t bb, int dir) {
+    return (dir > 0) ? (bb << dir) : (bb >> -dir);
+}
+
+bool bool_val(uint64_t bb) {
+    return bb ? 1 : 0;
+}
+
+int more_than_one(uint64_t bb) {
+    pop_lsb(bb);
+    return !(bb==0);
+}
+
+bool isPassedPawn(int s) {
+
+    int rank = get_relative_square(s) / 8;
+
+    ourPawns   = pieces_bb[Us][P];
+    theirPawns = pieces_bb[Them][P];
+
+    opposed    = theirPawns & passed_mask[s] & file_masks[s];
+    blocked    = theirPawns & (1ULL << (s + Up));
+    stoppers   = theirPawns & passed_mask[s];
+    lever      = theirPawns & board.pawnsAttacks(1ULL << s, Us);
+    leverPush  = theirPawns & board.pawnsAttacks(1ULL << (s + Up), Us);
+    doubled    = ourPawns   &  (1ULL <<(s - Up));
+    neighbours = ourPawns   & isolated_masks[s];
+    phalanx    = neighbours & rank_masks[s];
+    support    = neighbours & rank_masks[s - Up];
+
+
+    passed = !(stoppers ^ lever) 
+           || (!(stoppers ^ leverPush)
+             && count_bits(phalanx) >= count_bits(leverPush)) 
+           || (stoppers == blocked && (rank >= 4) 
+             && (Shift(support, Up) & ~(theirPawns | double_attacked_by_pawn[Them])));
+
+    passed &= !(passed_mask[s] & file_masks[s] & ourPawns);
+
+    if(support | phalanx) 
+        score += count_bits(support) * fade(supportPawnBanus) + count_bits(phalanx) * fade(phalanxPawnBouns);
+
+    if (passed) return true;
+    return false;
+}
+
+
+static inline int evaluateSide() {
     score = 0;
-    endgameWeight = calculateEndgameWeight();
-    attackedSquares = 0ULL;
-    xRayAttackedSquares = 0ULL;
+    attackingPiecesCount = 0;
+    valueOfAttacks = 0;
 
-    white_pawn_bb = board.whiteBitboards[P];
-    black_pawn_bb = board.blackBitboards[P];
+    occupancy = pieces_bb[Us][ALL_PIECES] | pieces_bb[Them][ALL_PIECES];
 
-    white_occupancy = board.whiteBitboards[K] | board.whiteBitboards[Q] | board.whiteBitboards[R] | board.whiteBitboards[B] | board.whiteBitboards[N] | board.whiteBitboards[P];
-    black_occupancy = board.blackBitboards[K] | board.blackBitboards[Q] | board.blackBitboards[R] | board.blackBitboards[B] | board.blackBitboards[N] | board.blackBitboards[P];
-    occupancy = white_occupancy | black_occupancy;
+    excludedFromMobility = pieces_bb[Us][P] & (rank_masks[get_relative_square(8)] | rank_masks[get_relative_square(16)]) | pieces_bb[Us][K] | attacked_squares[Us][P];
 
-    board.getTotalAttackedSquares(occupancy);
+    enemyKingRing = attacked_squares[Them][K] & ~double_attacked_by_pawn[Them];
+    ourKingRing = attacked_squares[Us][K] & ~double_attacked_by_pawn[Us];
 
-    //exclude our pawns on rank 2 and 3, our king, squares protected by enemy pawns
-    excludedFromWhiteMobility = (white_pawn_bb & (rank_masks[8 * 1] | rank_masks[8 * 2])) | board.whiteBitboards[K] | board.white_attacked_squares_bb[P];
-    excludedFromBlackMobility = (black_pawn_bb & (rank_masks[8 * 5] | rank_masks[8 * 6])) | board.blackBitboards[K] | board.black_attacked_squares_bb[P];
+    bb = pieces_bb[Us][K];
+    ourKingSq = pop_lsb(bb);
+    bb = pieces_bb[Them][K];
+    enemyKingSq = pop_lsb(bb);
 
-    whiteAttackingPiecesCount = 0;
-    blackAttackingPiecesCount = 0;
-    whiteValueOfAttacks = 0;
-    blackValueOfAttacks = 0;
+    for(int piece = K; piece <= P; piece++) {
+        bb = pieces_bb[Us][piece];
+        while(bb) {
+            square = pop_lsb(bb);
+            relativeSquare = get_relative_square(square);
+            score += fade(psqt[piece][relativeSquare]);
+            if (piece == Q)
+                attackedSquares = get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy);
+            else if (piece == R)
+                attackedSquares = get_rook_attacks(square, occupancy);
+            else if (piece == B)
+                attackedSquares = get_bishop_attacks(square, occupancy);
+            else if (piece == N)
+                attackedSquares = knight_attacks[square] & ~pieces_bb[Us][ALL_PIECES];
 
-    whiteKingRing = board.white_attacked_squares_bb[K] & ~board.whiteDoubleAttackedByPawn;
-    blackKingRing = board.black_attacked_squares_bb[K] & ~board.blackDoubleAttackedByPawn;
 
-    //get king positions
-    bb = board.whiteBitboards[K];
-    whiteKingSq = pop_lsb(bb);
-    bb = board.blackBitboards[K];
-    blackKingSq = pop_lsb(bb);
-
-    for (int pieceColor = 0; pieceColor < 2; pieceColor++)
-    {
-        for (int piece = K; piece <= P; piece++)
-        {
-            // black
-            if (pieceColor == 0)
+            if ((piece >= Q) && (piece <= N))
             {
-                bb = board.blackBitboards[piece];
-                while (bb)
+                // mobility bonus
+                score += fade(mobilityBonus[piece][count_bits(attackedSquares & ~excludedFromMobility)]);
+                // check if the piece attacks the enemy king ring
+                if (attackedSquares & enemyKingRing)
                 {
-                    square = pop_lsb(bb);
-                    score -= fade(psqt[piece][FLIP(square)]);
-
-                    if (piece == Q)
-                        attackedSquares = get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy);
-                    else if (piece == R)
-                        attackedSquares = get_rook_attacks(square, occupancy);
-                    else if (piece == B)
-                        attackedSquares = get_bishop_attacks(square, occupancy);
-                    else if (piece == N)
-                        attackedSquares = knight_attacks[square] & ~black_occupancy;
-
-
-                    //for queen, rook, bishops and knight
-                    if ((piece >= Q) && (piece <= N))
-                    {
-                        //mobility bonus
-                        score -= fade(mobilityBonus[piece][count_bits(attackedSquares & ~excludedFromBlackMobility)]);
-                        //check if the piece attacks the enemy king ring
-                        if(attackedSquares & whiteKingRing) { 
-                            blackAttackingPiecesCount++;
-                            blackValueOfAttacks += count_bits(attackedSquares & whiteKingRing) * attackerWeight[piece];
-                        }
-                        // if rook or bishop xray the king add bonus
-                        else if (piece == R && (file_masks[square] & whiteKingRing))
-                            score -= fade(rookOnKingRing);
-                        else if (piece == B && (get_bishop_attacks(square, (1ULL << square) | board.whiteBitboards[P] | board.blackBitboards[P]) & whiteKingRing))
-                            score -= fade(bishopOnKingRing);
-                    }
-
-
-                    switch (piece)
-                    {
-                    case K:
-
-                        virtualBishopMobility = get_bishop_attacks(square, occupancy);
-                        virtualRookMobility = get_rook_attacks(square, occupancy);
-                        virtualMobility = virtualRookMobility | virtualBishopMobility;
-
-                        // penalize the king based on the number of squares it can see if it was a queen (the more the king is opened, the more it gets penalized)
-                        // the penalty becomes weaker the more we approach the endgame
-                        score -= fade(virtualMobilityPenalty[count_bits(virtualMobility)]);
-
-                        // king shield bonus
-                        score -= count_bits(king_attacks[square] & black_pawn_bb) * fade(king_pawn_shield_bonus);
-
-                        // if we are in the endgame, give a bonus if the king is far from the corners (bigger the more we are into the endgame)
-                        score -= dstToCorner[square] * fade(dst_to_corner_bonus);
-
-                        break;
-                    case Q:
-                        break;
-                    case R:
-                        // semi-open file score
-                        // if no white pawns on the file
-                        if ((black_pawn_bb & file_masks[square]) == 0)
-                            score -= semiopen_file_score;
-                        // if no pawns at all on the file
-                        if (((black_pawn_bb | white_pawn_bb) & file_masks[square]) == 0)
-                            score -= open_file_score;
-
-                        break;
-                    case B:
-                        xRayAttackedSquares = get_bishop_attacks(square, 1ULL<<square);
-                        // penalty based on number of our pawns on the same color of our bishop
-
-                        // if it's black-square bishop
-                        if (get_bit(black_squares_bb, square))
-                            score -= count_bits(black_pawn_bb & black_squares_bb) * fade(penalty_pawns_on_same_bishop_color);
-                        // else, if it's a white color bishop
-                        else
-                            score -= count_bits(black_pawn_bb & white_squares_bb) * fade(penalty_pawns_on_same_bishop_color);
-
-                        // bonus to bishop on long diagonal that can see the center (1 or 2 squares)
-                        if (count_bits(attackedSquares & center) == 2)
-                            score -= fade(bishop_on_long_diagonal_bonus);
-
-                        score -= fade(bishopXRayPawns) * count_bits(xRayAttackedSquares & white_pawn_bb);
-
-                        //bishop outpost
-                        if (((8 <= square) && (square <= 31)) && get_bit(board.black_attacked_squares_bb[P], square) && !((black_passed_mask[square] & ~file_masks[square]) && white_pawn_bb))
-                        {
-                            score -= fade(outpostBonus);
-                        }
-
-                        break;
-                    case N:
-
-                        // check if knight is on an outpost
-                        // we check it by seeing if the knight is on:
-                        //  - rank from 4 to 6 (in respect to the view of each side)
-                        //  - a pawn-defended square
-                        //  - if it has no pawns that can attack him, meaning if there are no enemy pawns on the 2 files next to the knight file.
-                        if (((8 <= square) && (square <= 31)) && get_bit(board.black_attacked_squares_bb[P], square) && !((black_passed_mask[square] & ~file_masks[square]) && white_pawn_bb))
-                        {
-                            score -= fade(outpostBonus);
-                        }
-                        break;
-                    case P:
-                        // double pawn penalty
-                        double_pawns = count_bits(file_masks[square] & black_pawn_bb);
-                        // penalty if the pawn is doubled
-                        if (double_pawns > 1)
-                            score -= fade(double_pawn_penalty);
-
-                        // isolated pawn penalty
-                        if (!(black_pawn_bb & isolated_masks[square]))
-                            score -= fade(isolated_pawn_penalty);
-
-                        // passed pawn bonus
-                        if (!(black_passed_mask[square] & white_pawn_bb))
-                        {
-                            passedRank = get_rank[FLIP(square)];
-                            int blockSq = square - 8;
-
-                            score -= fade(passed_pawn_bonus[passedRank]);
-
-                            //bonus based on king proximity
-                            if(passedRank > 2) {
-                                score -= ((kingProximity(whiteKingSq, blockSq)-1) - (kingProximity(blackKingSq, blockSq))) * passedRank * endgameWeight / 256;
-                            }
-                            //if the block square is free, increase the advantage
-                            if(board.getPieceTypeOnSquare(blockSq) == -1) {
-                                score -= fade(freeBlockSquareBonus);
-                            }
-
-                            // if the passed pawn is supported by a rook placed on the same file, give a bonus
-                            if ((file_masks[square] & board.blackBitboards[R]))
-                                score -= fade(supported_passed_pawn_by_rook_bonus);
-
-                            //give penalty if an enemy rook gets on its file
-                            if ((file_masks[square] & board.whiteBitboards[R]))
-                                score -= fade(attacked_passed_pawn_by_rook_penalty);
-                            // give bonus if it is an outside passed pawn
-                            if (get_bit((file_masks[0] | file_masks[7]), square))
-                                score -= fade(outside_passed_pawn_bonus);
-
-                        }
-
-                        // connected pawns
-                        // give bonus if the pawns are connected, meaning if they are next to each other or if they form  a pawn chain
-
-                        // if they are next to each other
-                        score -= fade(connected_pawn_bonus) * count_bits((isolated_masks[square] & (rank_masks[square] | rank_masks[square+8] | rank_masks[square-8])) & black_pawn_bb);
-
-                        break;
-                    default:
-                        break;
-                    }
+                    attackingPiecesCount++;
+                    valueOfAttacks += count_bits(attackedSquares & enemyKingRing) * attackerWeight[piece];
                 }
+                // if rook or bishop xray the king ring add bonus
+                else if ((piece == R) && (file_masks[square] & enemyKingRing))
+                    score += fade(rookOnKingRing);
+                else if ((piece == B) && (get_bishop_attacks(square, occupancy) & enemyKingRing))
+                    score += fade(bishopOnKingRing);
             }
-            else
-            {
 
-                bb = board.whiteBitboards[piece];
-                while (bb)
-                {
-                    square = pop_lsb(bb);
-                    score += fade(psqt[piece][square]);
 
-                    if (piece == Q)
-                        attackedSquares = get_bishop_attacks(square, occupancy) | get_rook_attacks(square, occupancy);
-                    else if (piece == R)
-                        attackedSquares = get_rook_attacks(square, occupancy);
-                    else if (piece == B)
-                        attackedSquares = get_bishop_attacks(square, occupancy);
-                    else if (piece == N)
-                        attackedSquares = knight_attacks[square] & ~white_occupancy;
 
+            switch(piece) {
+                case K:
+                    virtualBishopMobility = get_bishop_attacks(square, occupancy);
+                    virtualRookMobility = get_rook_attacks(square, occupancy);
+                    virtualMobility = virtualRookMobility | virtualBishopMobility;
+
+                    score += fade(virtualMobilityPenalty[count_bits(virtualMobility)]);
+
+                    score += count_bits(king_attacks[square] & pieces_bb[Us][P]) * fade(king_pawn_shield_bonus);
+
+                    //penalty if king is on a pawnless flank (v1.1)
+                    if (!(pieces_bb[Us][P] | pieces_bb[Them][P]) & kingFlank[ourKingSq%8])
+                        score -= fade(pawnlessFlank);
+
+                    break;
+
+                case Q:
+                    break;
+                case R:
+                    if ((pieces_bb[Us][P] & file_masks[square]) == 0)
+                        score += semiopen_file_score;
+                    // if no pawns at all on the file
+                    if (((pieces_bb[Us][P] | pieces_bb[Them][P]) & file_masks[square]) == 0)
+                        score += open_file_score;
+
+                    break;
+
+                case B:
+                    xRayAttackedSquares = get_bishop_attacks(square, 1ULL << square);
+                    // penalty based on number of our pawns on the same color of our bishop
+
+                    // if it's black-square bishop
+                    if (get_bit(black_squares_bb, square))
+                        score -= count_bits(pieces_bb[Us][P] & black_squares_bb) * fade(bishopPawns);
+                    // else, if it's a white color bishop
+                    else
+                        score -= count_bits(pieces_bb[Us][P] & white_squares_bb) * fade(bishopPawns);
+
+                    // bonus to bishop on long diagonal that can see the center (1 or 2 squares)
+                    if (count_bits(attackedSquares & center) == 2)
+                        score += fade(bishopOnLongDiagonal);
+
+                    score += fade(bishopXRayPawns) * count_bits(xRayAttackedSquares & pieces_bb[Them][P]);
+
+                    //outpost bonus
+                    if (get_bit(rank_masks[get_relative_square(32)] | rank_masks[get_relative_square(40)] | rank_masks[get_relative_square(48)], square) && get_bit(attacked_squares[Us][P], square) && !((passed_mask[square] & ~file_masks[square]) && pieces_bb[Them][P]))
+                    {
+                        score += fade(outpostBonus);
+                    }
+
+                    break;
+                case N:
+                    //outpost bonus
+                    if (get_bit(rank_masks[get_relative_square(32)] | rank_masks[get_relative_square(40)] | rank_masks[get_relative_square(48)], square) && get_bit(attacked_squares[Us][P], square) && !((passed_mask[square] & ~file_masks[square]) && pieces_bb[Them][P])) {
+                    score += fade(outpostBonus);
+                    }
+                    break;
+                case P:
+                    // double pawn penalty
+                    double_pawns = count_bits(file_masks[square] & pieces_bb[Us][P]);
+                    //penalty if the pawn is doubled
+                    if (double_pawns > 1)
+                        score += fade(double_pawn_penalty);
+
+                    // isolated pawn penalty
+                    if (!(pieces_bb[Us][P] & isolated_masks[square]))
+                        score += fade(isolated_pawn_penalty);
+
+                    // passed pawn bonus
                     
-                    if ((piece >= Q) && (piece <= N))
-                    {
-                        // mobility bonus
-                        score += fade(mobilityBonus[piece][count_bits(attackedSquares & ~excludedFromWhiteMobility)]);
+                    if (isPassedPawn(square)) {
+                        passedRank = get_rank[relativeSquare];
+                        int blockSq = square + Up;
 
-                        // check if the piece attacks the enemy king ring
-                        if (attackedSquares & blackKingRing) {
-                            whiteAttackingPiecesCount++;
-                            whiteValueOfAttacks += count_bits(attackedSquares & blackKingRing) * attackerWeight[piece];
-                        }
-                        //if rook or bishop xray the king add bonus
-                        else if (piece == R && (file_masks[square] & blackKingRing))
-                            score += fade(rookOnKingRing);
-                        else if (piece == B && (get_bishop_attacks(square, (1ULL << square) | board.whiteBitboards[P] | board.blackBitboards[P]) & blackKingRing))
-                            score += fade(bishopOnKingRing);
-                    }
+                        bonus = fade(passed_pawn_bonus[passedRank]);
 
-                    switch (piece)
-                    {
-                    case K:
-
-                        virtualBishopMobility = get_bishop_attacks(square, occupancy);
-                        virtualRookMobility = get_rook_attacks(square, occupancy);
-                        virtualMobility = virtualRookMobility | virtualBishopMobility;
-
-                        score += fade(virtualMobilityPenalty[count_bits(virtualMobility)]);
-
-                        // king pawn shield bonus
-                        score += count_bits(king_attacks[square] & white_pawn_bb) * fade(king_pawn_shield_bonus);
-
-                        score += dstToCorner[square] * fade(dst_to_corner_bonus);
-                        break;
-                    case Q:
-
-                        break;
-                    case R:
-
-                        // bonus if the rook is on a semi-open file
-                        if ((white_pawn_bb & file_masks[square]) == 0)
-                            score += semiopen_file_score;
-
-                        // extra bonus if the rook is on an open file
-                        if (((white_pawn_bb | black_pawn_bb) & file_masks[square]) == 0)
-                            score += open_file_score;
-
-                        break;
-                    case B:
-
-                        xRayAttackedSquares = get_bishop_attacks(square, 1ULL<<square);
-
-                        // penalty based on number of same-side pawns on the same color of our bishop
-
-                        // if it's a black-square bishop
-                        if (get_bit(black_squares_bb, square))
-                            score += count_bits(white_pawn_bb & black_squares_bb) * fade(penalty_pawns_on_same_bishop_color);
-                        // else, if it's a white color bishop
-                        else
-                            score += count_bits(white_pawn_bb & white_squares_bb) * fade(penalty_pawns_on_same_bishop_color);
-
-                        // bonus to bishop on long diagonal that can see the center in x-ray
-                        if (count_bits(attackedSquares & center) == 2)
-                            score += fade(bishop_on_long_diagonal_bonus);
-
-                        
-                        score += fade(bishopXRayPawns) * count_bits(xRayAttackedSquares & black_pawn_bb);
-
-                        //bishop outpost
-                        if (((32 <= square) && (square <= 55)) && get_bit(board.white_attacked_squares_bb[P], square) && !((white_passed_mask[square] & ~file_masks[square]) && black_pawn_bb))
-                        {
-                            score += fade(outpostBonus);
-                        }
-                        break;
-                    case N:
-
-                        // check if knight is on an outpost
-                        // we check it by seeing if the knight is on:
-                        //  - rank from 4 to 6 (in respect to the view of each side)
-                        //  - a pawn-defended square
-                        //  - if it has no pawns that can attack him, meaning if there are no enemy pawns on the 2 files next to the knight file.
-
-                        if (((32 <= square) && (square <= 55)) && get_bit(board.white_attacked_squares_bb[P], square) && !((white_passed_mask[square] & ~file_masks[square]) && black_pawn_bb))
-                        {
-                            score += fade(outpostBonus);
-                        }
-
-                        break;
-                    case P:
-                        // double pawn penalty
-                        double_pawns = count_bits(file_masks[square] & white_pawn_bb);
-                        // penalty if the pawn is doubled
-                        if (double_pawns > 1)
-                            score += fade(double_pawn_penalty);
-
-                        // isolated pawn penalty
-                        if (!(white_pawn_bb & isolated_masks[square]))
-                            score += fade(isolated_pawn_penalty);
-
-                        // passed pawn bonus
-                        if (!(white_passed_mask[square] & black_pawn_bb))
-                        {
-                            passedRank = get_rank[square];
-                            int blockSq = square+8;
-                            score += fade(passed_pawn_bonus[passedRank]);
+                        // bonus based on king proximity
+                        if (passedRank > 2) {
                             
-                            //bonus based on king proximity
-                            if(passedRank > 2) {
-                                score += ((kingProximity(blackKingSq, blockSq) - 1) - (kingProximity(whiteKingSq, blockSq))) * passedRank * endgameWeight / 256;
-                            }
-                            //if the block square is free, increase the advantage
-                            if(board.getPieceTypeOnSquare(blockSq) == -1) {
-                                score += fade(freeBlockSquareBonus);
-                            }
+                            int w = 5 * passedRank - 13;
+                            bonus += ((kingProximity(enemyKingSq, blockSq) * 19 / 4) - (kingProximity(ourKingSq, blockSq) * 2)) * w * endgameWeight / 256;
 
-                            // if the passed pawn is supported by a rook placed on the same file, give a bonus
-                            if ((file_masks[square] & board.whiteBitboards[R]))
-                                score += fade(supported_passed_pawn_by_rook_bonus);
+                            // if the block square is free, increase the advantage
+                            if (board.getPieceTypeOnSquare(blockSq) == -1)
+                            {
+                                squaresToQueen = file_masks[square] & passed_mask[square];
+                                unsafeSquares = passed_mask[square];
 
-                            // give penalty if an enemy rook gets on its file
-                            if ((file_masks[square] & board.blackBitboards[R]))
-                                score += fade(attacked_passed_pawn_by_rook_penalty);
-                            // give bonus if it is an outside passed pawn
-                            if (get_bit((file_masks[0] | file_masks[7]), square))
-                                score += fade(outside_passed_pawn_bonus);
+                                uint64_t b = file_masks[square] & ~unsafeSquares & (pieces_bb[Us][R] | pieces_bb[Us][Q] | pieces_bb[Them][R] | pieces_bb[Them][Q]);
+
+                                if(!(pieces_bb[Them][ALL_PIECES] & b)) 
+                                    unsafeSquares &= attacked_squares[Them][ALL_PIECES] | pieces_bb[Them][ALL_PIECES];
+
+                                int k = !unsafeSquares                      ? 36 :
+                                !(unsafeSquares & ~attacked_squares[Us][P]) ? 30 :
+                                !(unsafeSquares & squaresToQueen)           ? 17 :
+                                !(get_bit(unsafeSquares, blockSq))          ?  7 :
+                                                                               0 ;
+
+                                if((pieces_bb[Us][ALL_PIECES] & b) || get_bit(attacked_squares[Us][ALL_PIECES], blockSq))
+                                    k += 5;
+                                
+                                bonus += k * w;
+                            }
                         }
-
-                        // connected pawns
-                        // give bonus if the pawns are connected, meaning if they are next to each other or if they form  a pawn chain
-
-                        // if they are next to each other
-                        score += fade(connected_pawn_bonus) * count_bits((isolated_masks[square] & (rank_masks[square] | rank_masks[square+8] | rank_masks[square-8])) & white_pawn_bb);
-
-                        break;
-                    default:
-                        break;
+                        score += bonus - (fade(passedFile) * std::min(square % 8, 7 - square % 8));
                     }
+                    
+                    // connected pawns
+                    // give bonus if the pawns are connected, meaning if they are next to each other or if they form  a pawn chain
 
-                }
+                    // if they are next to each other
+                    // score += fade(connected_pawn_bonus) * count_bits((isolated_masks[square] & (rank_masks[square] | rank_masks[square + Up] | rank_masks[square - Up])) & pieces_bb[Us][P]);
+
+                    break;
+                default:
+                    break;
             }
+
+
         }
     }
+    nonPawnEnemies = pieces_bb[Them][ALL_PIECES] & ~pieces_bb[Them][P];
+    stronglyProtected = attacked_squares[Them][P] | (double_attacked[Them] & ~double_attacked[Us]);
+    defended = nonPawnEnemies & stronglyProtected;
+    weak = pieces_bb[Them][ALL_PIECES] & ~stronglyProtected & attacked_squares[Us][ALL_PIECES];
 
-    nonPawnWhite = white_occupancy & ~board.whiteBitboards[P];
-    nonPawnBlack = black_occupancy & ~board.blackBitboards[P];
-    stronglyProtected = board.black_attacked_squares_bb[P] | (board.blackDoubleAttacked & ~board.whiteDoubleAttacked);
-    // Non-pawn enemies, strongly protected
-    defended = nonPawnBlack & stronglyProtected;
-    // Enemies not strongly protected and under our attack
-    weak = black_occupancy & ~stronglyProtected & board.white_total_attacked_squares;
-    // Bonus according to the kind of attacking pieces
-    if (defended | weak) {
-        bb = (defended | weak) & (board.white_attacked_squares_bb[N] | board.white_attacked_squares_bb[B]);
+
+    //Threats + weak queen protection + hanging
+    if(defended | weak) {
+        bb = (defended | weak) & (attacked_squares[Us][N] | attacked_squares[Us][B]);
         while (bb)
-            score += fade(threatByMinor[board.getBlackPieceTypeOnSquare(pop_lsb(bb))]);
+            score += fade(threatByMinor[board.getPieceTypeOnSquare(pop_lsb(bb))]);
 
-        bb = weak & board.white_attacked_squares_bb[R];
+        bb = weak & attacked_squares[Us][R];
         while (bb)
-            score += fade(threatByRook[board.getBlackPieceTypeOnSquare(pop_lsb(bb))]);
+            score += fade(threatByRook[board.getPieceTypeOnSquare(pop_lsb(bb))]);
 
-        bb = ~board.black_total_attacked_squares | (nonPawnBlack & board.whiteDoubleAttacked);
+        if(weak & attacked_squares[Us][K])
+            score += fade(threatByKing);
+
+        bb = ~attacked_squares[Them][ALL_PIECES] | (nonPawnEnemies & double_attacked[Us]);
         score += fade(hangingBonus) * count_bits(weak & bb);
         // Additional bonus if weak piece is only protected by a queen
-        score += fade(weakQueenProtection) * count_bits(weak & board.black_attacked_squares_bb[Q]);
+        score += fade(weakQueenProtection) * count_bits(weak & attacked_squares[Them][Q]);
     }
 
-    stronglyProtected = board.white_attacked_squares_bb[P] | (board.whiteDoubleAttacked & ~board.blackDoubleAttacked);
-    // Non-pawn enemies, strongly protected
-    defended = nonPawnWhite & stronglyProtected;
-    // Enemies not strongly protected and under our attack
-    weak = white_occupancy & ~stronglyProtected & board.black_total_attacked_squares;
-    // Bonus according to the kind of attacking pieces
-    if (defended | weak) {
-        bb = (defended | weak) & (board.black_attacked_squares_bb[N] | board.black_attacked_squares_bb[B]);
-        while (bb)
-            score -= fade(threatByMinor[board.getWhitePieceTypeOnSquare(pop_lsb(bb))]);
+    safe = ~attacked_squares[Them][ALL_PIECES] | attacked_squares[Us][ALL_PIECES];
 
-        bb = weak & board.black_attacked_squares_bb[R];
-        while (bb)
-            score -= fade(threatByRook[board.getWhitePieceTypeOnSquare(pop_lsb(bb))]);
+    //Threat by safe pawn
+    bb = pieces_bb[Us][P] & safe;
+    bb = board.pawnsAttacks(bb, Us) & nonPawnEnemies;
+    score += fade(threatBySafePawn) * count_bits(bb);
 
-        bb = ~board.white_total_attacked_squares | (nonPawnWhite & board.blackDoubleAttacked);
-        score -= fade(hangingBonus) * count_bits(weak & bb);
-        // Additional bonus if weak piece is only protected by a queen
-        score -= fade(weakQueenProtection) * count_bits(weak & board.white_attacked_squares_bb[Q]);
-    }
-
-    // threat by safe pawn push (bonus for white)
-    whiteSafe = ~board.black_total_attacked_squares | board.white_total_attacked_squares;
-    bb = ((board.whiteBitboards[P] & ~rank_masks[8*6]) << 8) & ~occupancy;
-    bb |= ((bb & rank_masks[8*2]) << 8) & ~occupancy;
-    bb &= ~board.black_attacked_squares_bb[P] & whiteSafe;
-    bb = board.whitePawnsAttacks(bb) & (black_occupancy & ~board.blackBitboards[P]);
+    //Threat by pawn push    
+    bb = Shift(pieces_bb[Us][P] & ~rank_masks[get_relative_square(48)], Up) & ~occupancy;
+    bb |= Shift(bb & rank_masks[get_relative_square(16)], Up) & ~occupancy;
+    bb &= ~attacked_squares[Them][P] & safe;
+    bb = board.pawnsAttacks(bb, Us) & nonPawnEnemies;
     score += fade(threatByPawnPush) * count_bits(bb);
 
-    // threat by safe pawn push (bonus for black)
-    blackSafe = ~board.white_total_attacked_squares | board.black_total_attacked_squares;
-    bb = ((board.blackBitboards[P] & ~rank_masks[8 * 1]) >> 8) & ~occupancy;
-    bb |= ((bb & rank_masks[8 * 5]) >> 8) & ~occupancy;
-    bb &= ~board.white_attacked_squares_bb[P] & blackSafe;
-    bb = board.blackPawnsAttacks(bb) & (white_occupancy & ~board.whiteBitboards[P]);
-    score -= fade(threatByPawnPush) * count_bits(bb);
+    //space evaluation (v1.1)
 
-    //minor behind pawn bonuses
-    score += count_bits((white_pawn_bb >> 8) & (board.whiteBitboards[N] | board.whiteBitboards[B])) * fade(minorBehindPawnBonus);
-    score -= count_bits((black_pawn_bb << 8) & (board.blackBitboards[N] | board.blackBitboards[B])) * fade(minorBehindPawnBonus);
+    spaceMask = (Us == WHITE ? CenterFiles & (rank_masks[8] | rank_masks[16] | rank_masks[24])
+                            : CenterFiles & (rank_masks[48] | rank_masks[40] | rank_masks[32]));
 
-    //attack bonuses
-    score += (whiteValueOfAttacks*attackWeight[whiteAttackingPiecesCount] / 100);
-    score -= (blackValueOfAttacks*attackWeight[blackAttackingPiecesCount] / 100);
+    safe = spaceMask & ~pieces_bb[Us][P] & ~attacked_squares[Them][P];
+    behind = pieces_bb[Us][P];
+    behind |= Shift(behind, -Up);
+    behind |= Shift(behind, -Up-Up);
+    int bonus = count_bits(safe) + count_bits(behind & safe & ~attacked_squares[Them][ALL_PIECES]);
 
-    // bonus to the side which has the pair of bishops
-    if ((count_bits(board.blackBitboards[B]) - count_bits(board.whiteBitboards[B])) == 2)
-        score -= bishop_pair_bonus;
-    else if ((count_bits(board.whiteBitboards[B]) - count_bits(board.blackBitboards[B])) == 2)
+    blockedPawns =  Shift(pieces_bb[Us][P], Up) & (pieces_bb[Them][P] | double_attacked_by_pawn[Them]);
+
+    int weight = count_bits(pieces_bb[WHITE][ALL_PIECES]) -3 + std::min(count_bits(blockedPawns), 9);
+    score += (bonus * weight * weight * (maxEndgameWeight-endgameWeight))/12288;
+
+    // minor behind pawn
+    score += count_bits(Shift(pieces_bb[Us][P], -Up) & (pieces_bb[Us][N] | pieces_bb[Us][B])) * fade(minorBehindPawnBonus);
+
+    // attack
+    score += (valueOfAttacks * attackWeight[attackingPiecesCount] / 100);
+
+    if ((count_bits(pieces_bb[Us][B]) - count_bits(pieces_bb[Them][B])) == 2)
         score += bishop_pair_bonus;
 
     return score;
 }
 
-// evaluation function
-// counts material and evaluates the positional score
-static inline int evaluate()
-{
-    int evaluation = board.whitePiecesValue - board.blackPiecesValue;
 
-    evaluation += positionalScore();
+
+
+static inline int evaluate() {
+    int evaluation=0;
+    endgameWeight = calculateEndgameWeight();
+    // Us == 1 means we are white, 0 means we are black
+    Us = board.colorToMove == WHITE ? WHITE : BLACK;
+    Them = Us == WHITE ? BLACK : WHITE;
+
+    pieces_bb[WHITE][ALL_PIECES] = pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P];
+    pieces_bb[BLACK][ALL_PIECES] = pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
+
+    occupancy = pieces_bb[WHITE][ALL_PIECES] | pieces_bb[BLACK][ALL_PIECES];
+
+    board.getTotalAttackedSquares(occupancy);
+
+    passed_mask = (Us == WHITE) ? white_passed_mask : black_passed_mask;
+
+    Up = (Us == WHITE) ? 8 : -8;
+
+    evaluation += evaluateSide();
+    Us = (Us == WHITE) ? BLACK : WHITE;
+    Them = (Us == WHITE) ? BLACK : WHITE;
+    passed_mask = (Us == WHITE) ? white_passed_mask : black_passed_mask;
+    Up = -Up;
+    evaluation -= evaluateSide();
 
     int perspective = board.colorToMove ? 1 : -1;
-
-    return evaluation * perspective;
+    //evaluation += fade(tempoBonus) * perspective;
+    return evaluation + (board.whitePiecesValue - board.blackPiecesValue) * perspective;
 }
+
 
 #endif

@@ -155,7 +155,7 @@ int move_scores[256];
 // sort moves to make search more efficient, by searching first captures, killers and history moves, and principle variation (PV) moves
 
 MOVE tempMove;
-int tempScore, current_move, next_move;
+int tempScore, current_move, next_move, max_score, h, i, j, x, y;
 static inline void sortMoves(movesList &moveList, MOVE best_move)
 {
     MOVE move;
@@ -168,22 +168,21 @@ static inline void sortMoves(movesList &moveList, MOVE best_move)
         else 
             move_scores[count] = scoreMove(move);
     }
-    
-    for (current_move = 0; current_move < moveList.count-1; current_move++)
-    {
-        for (next_move = current_move + 1; next_move < moveList.count; next_move++)
-        {
-            if (move_scores[current_move] < move_scores[next_move])
-            {
-                tempMove = moveList.moves[current_move];
-                tempScore = move_scores[current_move];
-                // swap scores
-                move_scores[current_move] = move_scores[next_move];
-                move_scores[next_move] = tempScore;
-                // swap moves
-                moveList.moves[current_move] = moveList.moves[next_move];
-                moveList.moves[next_move] = tempMove;
+  
+
+    //partial inertion sort (v1.1) // improves nps by around 10%
+    for(i=0; i < moveList.count; i++) {
+        if(move_scores[i] > 0) {
+            x = move_scores[i];
+            tempMove = moveList.moves[i];
+            j = i-1;
+            while(j >= 0 && x > move_scores[j]) {
+                move_scores[j+1] = move_scores[j];
+                moveList.moves[j+1] = moveList.moves[j];
+                j--;
             }
+            move_scores[j+1] = x;
+            moveList.moves[j+1] = tempMove;
         }
     }
 }

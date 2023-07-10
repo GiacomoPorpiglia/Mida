@@ -13,6 +13,7 @@ using namespace std;
 
 #define FLIP(sq) ((sq) ^ 56)
 
+
 static inline int pop_lsb(uint64_t &bb)
 {
     auto index = bitScanForward(bb);

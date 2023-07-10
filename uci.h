@@ -459,7 +459,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 1.0\n");
+    printf("id name MIDA 1.1\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -487,7 +487,7 @@ void uci_loop()
         }
 
         else if (strncmp(input, "ucinewgame", 10) == 0)
-        {
+        {   
             parse_position("position startpos");
             clearTranspositionTable();
         }
@@ -504,7 +504,7 @@ void uci_loop()
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 1.0\n");
+            printf("id name MIDA 1.1\n");
             printf("id author Giacomo Porpiglia\n");
             printf("uciok\n");
         }

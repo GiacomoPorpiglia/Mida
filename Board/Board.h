@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include "../constants.h"
 #define CH char
 #define MOVE uint16_t
 
@@ -30,24 +31,6 @@ public:
     const int KNIGHT_OFFSETS[8] = {6, 15, 17, 10, -6, -15, -17, -10};
     uint64_t NOT_FILES_KNIGHT[8] = {GH_FILE, H_FILE, A_FILE, AB_FILE, AB_FILE, A_FILE, H_FILE, GH_FILE};
 
-    //order is: king, queen, rook, bishop, knight, pawn
-    uint64_t whiteBitboards[6] = {
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    };
-    uint64_t blackBitboards[6] = {
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-    };
-
     movesList totalMoves;
 
     CH allPieces[64] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
@@ -57,17 +40,6 @@ public:
     //value of white and black pieces on the board, will be updated each move to make the piece count a lot faster
     int whitePiecesValue=0;
     int blackPiecesValue=0;
-
-
-    uint64_t white_attacked_squares_bb[6];
-    uint64_t black_attacked_squares_bb[6];
-    uint64_t whiteDoubleAttacked; // squares attacked twice by white
-    uint64_t blackDoubleAttacked; // squares attacked twice by black
-    uint64_t whiteDoubleAttackedByPawn; // squares attacked twice by white
-    uint64_t blackDoubleAttackedByPawn; // squares attacked twice by black
-
-    uint64_t white_total_attacked_squares = 0ULL;
-    uint64_t black_total_attacked_squares = 0ULL;
 
 
     uint64_t colorToMoveOccupiedBB;
@@ -105,6 +77,7 @@ public:
 
     uint64_t whitePawnsAttacks(uint64_t pawn_bb);
     uint64_t blackPawnsAttacks(uint64_t pawn_bb);
+    uint64_t pawnsAttacks(uint64_t pawn_bb, int side);
 
 private:
 

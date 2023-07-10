@@ -16,15 +16,19 @@
 #define HASH_TABLE_SIZE 8000000 // 200 MB
 #define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
 
-const int pieceValues[6] = {0, 950, 500, 320, 300, 100};
+#define WHITE 1
+#define BLACK 0
 
-// 565189
+//0, 1230, 620, 420, 410, 100
+const int pieceValues[6] = {0, 1120, 605, 410, 400, 100};
+
 const int K = 0;
 const int Q = 1;
 const int R = 2;
 const int B = 3;
 const int N = 4;
 const int P = 5;
+const int ALL_PIECES = 6;
 
 #define inf 50000
 
@@ -52,6 +56,10 @@ typedef struct
     int count;
 } movesList;
 
+// not a constant. it is here because it is needed everywhere, and this file is imported everywhere.
+//
+//  [side][piece type (also all pieces, index = 6)]
+uint64_t pieces_bb[2][7];
 
 /*
 knight attack table, with a bitboard for each square
@@ -615,7 +623,7 @@ const uint64_t isolated_masks[64] = {
     4629771061636907072};
 
 // white passed pawn mask, it shows all the squares in front of a pawn on its file and the 2 adjacent files.
-const uint64_t white_passed_mask[64] = {
+uint64_t white_passed_mask[64] = {
     217020518514230016,
     506381209866536704,
     1012762419733073408,
@@ -682,7 +690,7 @@ const uint64_t white_passed_mask[64] = {
     0};
 
 // black passed pawn mask, it shows all the squares in front of a pawn on its file and the 2 adjacent files.
-const uint64_t black_passed_mask[64] = {
+uint64_t black_passed_mask[64] = {
     0,
     0,
     0,
@@ -750,6 +758,16 @@ const uint64_t black_passed_mask[64] = {
 
 const uint64_t black_squares_bb = 12273903644374837845;
 const uint64_t white_squares_bb = 6172840429334713770;
+
+const uint64_t queenSide = file_masks[0] | file_masks[1] | file_masks[2] | file_masks[3];
+const uint64_t kingSide = file_masks[4] | file_masks[5] | file_masks[6] | file_masks[7];
+const uint64_t CenterFiles = file_masks[2] | file_masks[3] | file_masks[4] | file_masks[5];
+
+//indexed by [<file>]
+const uint64_t kingFlank[8] = {
+    queenSide ^ file_masks[3], queenSide, queenSide,
+    CenterFiles, CenterFiles,
+    kingSide, kingSide, kingSide ^ file_masks[4]};
 
 const uint64_t center = 69122129920;
 

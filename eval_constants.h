@@ -9,9 +9,23 @@
 |     pawn structures, king safety and piece activity      |
 \=========================================================*/
 
-const int double_pawn_penalty[2] = {-15, -30};
+
+
+// bitboards for evaluation (filed in board.getTotalAttackedSquares function)
+uint64_t attacked_squares[2][7];
+uint64_t double_attacked_by_pawn[2];
+uint64_t double_attacked[2];
+
+const int supportPawnBanus[2] = {3, 6};
+const int phalanxPawnBouns[2] = {2, 4};
+
 const int isolated_pawn_penalty[2] = {-15, -30};
+const int double_pawn_penalty[2] = {-15, -30};
+
 const int passed_pawn_bonus[8][2] = {{0, 0}, {2, 38}, {15, 36}, {22, 50}, {64, 81}, {166, 184}, {284, 269}, {0, 0}}; // for rank
+const int passedFile[2] = {13, 8};
+
+
 const int supported_passed_pawn_by_rook_bonus[2] = {0, 35};
 const int attacked_passed_pawn_by_rook_penalty[2] = {0, -35};
 const int outside_passed_pawn_bonus[2] = {0, 20};
@@ -21,118 +35,53 @@ const int weakQueenProtection[2] = {7, 0};
 const int hangingBonus[2] = {15, 5};
 const int threatByMinor[6][2] = {
     {0, 0},
-    {20, 0},
-    {23, 0},
-    {19, 0},
-    {15, 0},
-    {3, 10}
+    {20, 40},
+    {25, 30},
+    {20, 13},
+    {15, 12},
+    {1, 10}
 };
 const int threatByRook[6][2] = {
     {0, 0},
-    {20, 0},
-    {0, 0},
-    {15, 0},
-    {14, 0},
-    {2, 10}
+    {20, 10},
+    {0, 15},
+    {11, 15},
+    {9, 14},
+    {1, 12}
 };
 
+//bonus for rook on open/semiopen file
 const int semiopen_file_score = 15;
 const int open_file_score = 20;
+
+//bonus for each shield pawn
 const int king_pawn_shield_bonus[2] = {15, 0};
-const int dst_to_corner_bonus[2] = {0, 10};
-const int penalty_pawns_on_same_bishop_color[2] = {3, 9};
-const int bishop_on_long_diagonal_bonus[2] = {15, 0};
+//penalty if king is on pawnless flank
+const int pawnlessFlank[2] = {8, 45};
+//penalty for each pawn on same color as bishop
+const int bishopPawns[2] = {3, 9};
+//penalty for each enemy pawn the bishop x-rays
+const int bishopXRayPawns[2] = {-4, -5};
+//bonus if bishop is on long diagonal
+const int bishopOnLongDiagonal[2] = {15, 0};
+//bonus for the side with the bishop pair
 const int bishop_pair_bonus = 20;
 
+//bonus for outpost (knight/bishop)
 const int outpostBonus[2] = {45, 20};
+//bonus if minor piee is behind friendly pawn
 const int minorBehindPawnBonus[2] = {10, 3};
-const int connected_pawn_bonus[2] = {2, 7};
 
-const int bishopXRayPawns[2] = {-4, -5};
+
+//bonus if rook or bishop attacks a square on the enemy king ring
 const int rookOnKingRing[2] = {13, 0};
 const int bishopOnKingRing[2] = {10, 0};
 
-
-const int threatByPawnPush[2] = {20, 0}; // 25 0
-
-const uint64_t queenSide = file_masks[0] | file_masks[1] | file_masks[2] | file_masks[3];
-const uint64_t kingSide = file_masks[4] | file_masks[5] | file_masks[6] | file_masks[7];
-
-//[number of white pawns][number of black pawns]
-constexpr int pawnMajorityBonus[5][5][2] = {
-    {{0, 0},  {0, -20}, {0, -40}, {0, -60}, {0, -80}},
-    {{0, 20}, {0, 0},   {0, -20}, {0, -40}, {0, -60}},
-    {{0, 40}, {0, 20},  {0, 0},   {0, -20}, {0, -40}},
-    {{0, 60}, {0, 40},  {0, 20},  {0, 0},   {0, -20}},
-    {{0, 80}, {0, 60},  {0, 40},  {0, 20},  {0, 0}}
-};
-
-const int dstToCorner[64] = {
-    0,
-    1,
-    2,
-    3,
-    3,
-    2,
-    1,
-    0,
-    1,
-    2,
-    3,
-    4,
-    4,
-    3,
-    2,
-    1,
-    2,
-    3,
-    4,
-    5,
-    5,
-    4,
-    3,
-    2,
-    3,
-    4,
-    5,
-    6,
-    6,
-    5,
-    4,
-    3,
-    3,
-    4,
-    5,
-    6,
-    6,
-    5,
-    4,
-    3,
-    2,
-    3,
-    4,
-    5,
-    5,
-    4,
-    3,
-    2,
-    1,
-    2,
-    3,
-    4,
-    4,
-    3,
-    2,
-    1,
-    0,
-    1,
-    2,
-    3,
-    3,
-    2,
-    1,
-    0,
-};
+//bonus if pawns threat enemy pieces 
+const int threatByPawnPush[2] = {25, 20}; // 25 0
+const int threatBySafePawn[2] = {75, 45};
+//bonus for king threats
+const int threatByKing[2] = {11, 40};
 
 //stockfish
 const int psqt[6][64][2] = {

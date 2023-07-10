@@ -1,5 +1,6 @@
 #include "Board.h"
 #include "../constants.h"
+#include "../eval_constants.h"
 
 
 // using namespace std;
@@ -16,8 +17,8 @@ void Board::reset() {
 
     // reset bitboards array
     for (int i = 0; i < 6; i++) {
-        whiteBitboards[i] = 0ULL;
-        blackBitboards[i] = 0ULL;
+        pieces_bb[WHITE][i] = 0ULL;
+        pieces_bb[BLACK][i] = 0ULL;
     }
 
     //reset all pieces array
@@ -49,62 +50,62 @@ void Board::loadFenPosition(string fen) {
         else if (!isdigit(ch)) {
             idx = row*8 + col;
             if (ch == 'P') {  
-                set_bit(whiteBitboards[5], idx);
+                set_bit(pieces_bb[WHITE][5], idx);
                 allPieces[idx] = 5;
                 whitePiecesValue += pieceValues[5];
             }
             else if (ch == 'p') {
-                set_bit(blackBitboards[5], idx);
+                set_bit(pieces_bb[BLACK][5], idx);
                 allPieces[idx] = 5;
                 blackPiecesValue += pieceValues[5];
             }
             else if (ch == 'N') {
-                set_bit(whiteBitboards[4], idx);
+                set_bit(pieces_bb[WHITE][4], idx);
                 allPieces[idx] = 4;
                 whitePiecesValue += pieceValues[4];
             }
             else if (ch == 'n') {
-                set_bit(blackBitboards[4], idx);
+                set_bit(pieces_bb[BLACK][4], idx);
                 allPieces[idx] = 4;
                 blackPiecesValue += pieceValues[4];
             }
             else if (ch == 'B') {
-                set_bit(whiteBitboards[3], idx);
+                set_bit(pieces_bb[WHITE][3], idx);
                 allPieces[idx] = 3;
                 whitePiecesValue += pieceValues[3];
             }
             else if (ch == 'b') {
-                set_bit(blackBitboards[3], idx);
+                set_bit(pieces_bb[BLACK][3], idx);
                 allPieces[idx] = 3;
                 blackPiecesValue += pieceValues[3];
             }
             else if (ch == 'R') {
-                set_bit(whiteBitboards[2], idx);
+                set_bit(pieces_bb[WHITE][2], idx);
                 allPieces[idx] = 2;
                 whitePiecesValue += pieceValues[2];
             }
             else if (ch == 'r') {
-                set_bit(blackBitboards[2], idx);
+                set_bit(pieces_bb[BLACK][2], idx);
                 allPieces[idx] = 2;
                 blackPiecesValue += pieceValues[2];
             }
             else if (ch == 'Q') {
-                set_bit(whiteBitboards[1], idx);
+                set_bit(pieces_bb[WHITE][1], idx);
                 allPieces[idx] = 1;
                 whitePiecesValue += pieceValues[1];
             }
             else if (ch == 'q') {
-                set_bit(blackBitboards[1], idx);
+                set_bit(pieces_bb[BLACK][1], idx);
                 allPieces[idx] = 1;
                 blackPiecesValue += pieceValues[1];
             }
             else if (ch == 'K') {
-                set_bit(whiteBitboards[0], idx);
+                set_bit(pieces_bb[WHITE][0], idx);
                 allPieces[idx] = 0;
                 whitePiecesValue += pieceValues[0];
             }
             else if (ch == 'k') {
-                set_bit(blackBitboards[0], idx);
+                set_bit(pieces_bb[BLACK][0], idx);
                 allPieces[idx] = 0;
                 blackPiecesValue += pieceValues[0];
             }
@@ -651,16 +652,11 @@ void Board::addMoves(int squareFrom, uint64_t bb, int pieceType) {
             totalMoves.count++;
             totalMoves.moves[totalMoves.count] = (move | (N << 12));
             totalMoves.count++;
-            // totalMoves.push_back(move | (Q << 12));
-            // totalMoves.push_back(move | (R << 12));
-            // totalMoves.push_back(move | (B << 12));
-            // totalMoves.push_back(move | (N << 12));
         }
         else
         {
             totalMoves.moves[totalMoves.count] = (move | (pieceType << 12));
             totalMoves.count++;
-            // totalMoves.push_back(move | (((uint16_t)pieceType) << 12));
         }
     }
 
@@ -673,110 +669,117 @@ uint64_t Board::blackPawnsAttacks(uint64_t pawn_bb)
 {
     return (((pawn_bb >> 7) & ~A_FILE) | ((pawn_bb >> 9) & ~H_FILE));
 }
+uint64_t Board::pawnsAttacks(uint64_t pawn_bb, int side)
+{   
+    //white
+    if(side == 1) return whitePawnsAttacks(pawn_bb);
+    return blackPawnsAttacks(pawn_bb);
+}
+
 // for evaluation
 void Board::getTotalAttackedSquares(uint64_t occupancy)
 {
 
-    white_attacked_squares_bb[1] = 0ULL;
-    white_attacked_squares_bb[2] = 0ULL;
-    white_attacked_squares_bb[3] = 0ULL;
-    white_attacked_squares_bb[4] = 0ULL;
+    attacked_squares[WHITE][1] = 0ULL;
+    attacked_squares[WHITE][2] = 0ULL;
+    attacked_squares[WHITE][3] = 0ULL;
+    attacked_squares[WHITE][4] = 0ULL;
 
-    black_attacked_squares_bb[1] = 0ULL;
-    black_attacked_squares_bb[2] = 0ULL;
-    black_attacked_squares_bb[3] = 0ULL;
-    black_attacked_squares_bb[4] = 0ULL;
+    attacked_squares[BLACK][1] = 0ULL;
+    attacked_squares[BLACK][2] = 0ULL;
+    attacked_squares[BLACK][3] = 0ULL;
+    attacked_squares[BLACK][4] = 0ULL;
 
-    white_total_attacked_squares = 0ULL;
-    black_total_attacked_squares = 0ULL;
+    attacked_squares[WHITE][ALL_PIECES] = 0ULL;
+    attacked_squares[BLACK][ALL_PIECES] = 0ULL;
     uint64_t attack_bb;
 
 
-    white_attacked_squares_bb[P] = ((whiteBitboards[P] << 7) & ~H_FILE);
-    whiteDoubleAttacked = white_attacked_squares_bb[P] & ((whiteBitboards[P] << 9) & ~A_FILE);
-    whiteDoubleAttackedByPawn = whiteDoubleAttacked;
-    white_attacked_squares_bb[P] |= ((whiteBitboards[P] << 9) & ~A_FILE);
+    attacked_squares[WHITE][P] = ((pieces_bb[WHITE][P] << 7) & ~H_FILE);
+    double_attacked[WHITE] = attacked_squares[WHITE][P] & ((pieces_bb[WHITE][P] << 9) & ~A_FILE);
+    double_attacked_by_pawn[WHITE] = double_attacked[WHITE];
+    attacked_squares[WHITE][P] |= ((pieces_bb[WHITE][P] << 9) & ~A_FILE);
 
-    black_attacked_squares_bb[P] =  ((blackBitboards[P] >> 7) & ~A_FILE);
-    blackDoubleAttacked = black_attacked_squares_bb[P] & ((blackBitboards[P] >> 9) & ~H_FILE);
-    blackDoubleAttackedByPawn = blackDoubleAttacked;
-    black_attacked_squares_bb[P] |= ((blackBitboards[P] >> 9) & ~H_FILE);
+    attacked_squares[BLACK][P] =  ((pieces_bb[BLACK][P] >> 7) & ~A_FILE);
+    double_attacked[BLACK] = attacked_squares[BLACK][P] & ((pieces_bb[BLACK][P] >> 9) & ~H_FILE);
+    double_attacked_by_pawn[BLACK] = double_attacked[BLACK];
+    attacked_squares[BLACK][P] |= ((pieces_bb[BLACK][P] >> 9) & ~H_FILE);
     
-    white_total_attacked_squares |= white_attacked_squares_bb[P];
-    black_total_attacked_squares |= black_attacked_squares_bb[P];
+    attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][P];
+    attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][P];
 
     int square;
-    uint64_t bb_copy = whiteBitboards[K];
+    uint64_t bb_copy = pieces_bb[WHITE][K];
     while(bb_copy) {
         attack_bb = kingMap(pop_lsb(bb_copy));
-        white_attacked_squares_bb[K] = attack_bb;
-        whiteDoubleAttacked |= (white_total_attacked_squares & attack_bb);
-        white_total_attacked_squares |= white_attacked_squares_bb[K];
+        attacked_squares[WHITE][K] = attack_bb;
+        double_attacked[WHITE]|= (attacked_squares[WHITE][ALL_PIECES] & attack_bb);
+        attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][K];
     }
-    bb_copy = blackBitboards[K];
+    bb_copy = pieces_bb[BLACK][K];
     while(bb_copy) {
         attack_bb = kingMap(pop_lsb(bb_copy));
-        black_attacked_squares_bb[K] = attack_bb;
-        blackDoubleAttacked |= (black_total_attacked_squares & attack_bb);
-        black_total_attacked_squares |= black_attacked_squares_bb[K];
+        attacked_squares[BLACK][K] = attack_bb;
+        double_attacked[BLACK] |= (attacked_squares[BLACK][ALL_PIECES] & attack_bb);
+        attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][K];
     }
-    bb_copy = whiteBitboards[Q];
+    bb_copy = pieces_bb[WHITE][Q];
     while (bb_copy) {
         square = pop_lsb(bb_copy);
         attack_bb = get_rook_attacks(square, occupancy) | get_bishop_attacks(square, occupancy);
-        white_attacked_squares_bb[Q] |= attack_bb;
-        whiteDoubleAttacked |= (white_total_attacked_squares & attack_bb);
-        white_total_attacked_squares |= white_attacked_squares_bb[Q];
+        attacked_squares[WHITE][Q] |= attack_bb;
+        double_attacked[WHITE]|= (attacked_squares[WHITE][ALL_PIECES] & attack_bb);
+        attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][Q];
     }
-    bb_copy = blackBitboards[Q];
+    bb_copy = pieces_bb[BLACK][Q];
     while (bb_copy) {
         square = pop_lsb(bb_copy);
         attack_bb = get_rook_attacks(square, occupancy) | get_bishop_attacks(square, occupancy);
-        black_attacked_squares_bb[Q] |= attack_bb;
-        blackDoubleAttacked |= (black_total_attacked_squares & attack_bb);
-        black_total_attacked_squares |= black_attacked_squares_bb[Q];
+        attacked_squares[BLACK][Q] |= attack_bb;
+        double_attacked[BLACK] |= (attacked_squares[BLACK][ALL_PIECES] & attack_bb);
+        attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][Q];
     }
-    bb_copy = whiteBitboards[R];
+    bb_copy = pieces_bb[WHITE][R];
     while (bb_copy) {
         attack_bb = get_rook_attacks(pop_lsb(bb_copy), occupancy);
-        white_attacked_squares_bb[R] |= attack_bb;
-        whiteDoubleAttacked |= (white_total_attacked_squares & attack_bb);
-        white_total_attacked_squares |= white_attacked_squares_bb[R];
+        attacked_squares[WHITE][R] |= attack_bb;
+        double_attacked[WHITE]|= (attacked_squares[WHITE][ALL_PIECES] & attack_bb);
+        attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][R];
     }
-    bb_copy = blackBitboards[R];
+    bb_copy = pieces_bb[BLACK][R];
     while (bb_copy) {
         attack_bb = get_rook_attacks(pop_lsb(bb_copy), occupancy);
-        black_attacked_squares_bb[R] |= attack_bb;
-        blackDoubleAttacked |= (black_total_attacked_squares & attack_bb);
-        black_total_attacked_squares |= black_attacked_squares_bb[R];
+        attacked_squares[BLACK][R] |= attack_bb;
+        double_attacked[BLACK] |= (attacked_squares[BLACK][ALL_PIECES] & attack_bb);
+        attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][R];
     }
-    bb_copy = whiteBitboards[B];
+    bb_copy = pieces_bb[WHITE][B];
     while (bb_copy) {
         attack_bb = get_bishop_attacks(pop_lsb(bb_copy), occupancy);
-        white_attacked_squares_bb[B] |= attack_bb;
-        whiteDoubleAttacked |= (white_total_attacked_squares & attack_bb);
-        white_total_attacked_squares |= white_attacked_squares_bb[B];
+        attacked_squares[WHITE][B] |= attack_bb;
+        double_attacked[WHITE]|= (attacked_squares[WHITE][ALL_PIECES] & attack_bb);
+        attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][B];
     }
-    bb_copy = blackBitboards[B];
+    bb_copy = pieces_bb[BLACK][B];
     while (bb_copy) {
         attack_bb = get_bishop_attacks(pop_lsb(bb_copy), occupancy);
-        black_attacked_squares_bb[B] |= attack_bb;
-        blackDoubleAttacked |= (black_total_attacked_squares & attack_bb);
-        black_total_attacked_squares |= black_attacked_squares_bb[B];
+        attacked_squares[BLACK][B] |= attack_bb;
+        double_attacked[BLACK] |= (attacked_squares[BLACK][ALL_PIECES] & attack_bb);
+        attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][B];
     }
-    bb_copy = whiteBitboards[N];
+    bb_copy = pieces_bb[WHITE][N];
     while (bb_copy) {
         attack_bb = knightMap(pop_lsb(bb_copy));
-        white_attacked_squares_bb[N] |= attack_bb;
-        whiteDoubleAttacked |= (white_total_attacked_squares & attack_bb);
-        white_total_attacked_squares |= white_attacked_squares_bb[N];
+        attacked_squares[WHITE][N] |= attack_bb;
+        double_attacked[WHITE]|= (attacked_squares[WHITE][ALL_PIECES] & attack_bb);
+        attacked_squares[WHITE][ALL_PIECES] |= attacked_squares[WHITE][N];
     }
-    bb_copy = blackBitboards[N];
+    bb_copy = pieces_bb[BLACK][N];
     while (bb_copy) {
         attack_bb = knightMap(pop_lsb(bb_copy));
-        black_attacked_squares_bb[N] |= attack_bb;
-        blackDoubleAttacked |= (black_total_attacked_squares & attack_bb);
-        black_total_attacked_squares |= black_attacked_squares_bb[N];
+        attacked_squares[BLACK][N] |= attack_bb;
+        double_attacked[BLACK] |= (attacked_squares[BLACK][ALL_PIECES] & attack_bb);
+        attacked_squares[BLACK][ALL_PIECES] |= attacked_squares[BLACK][N];
     }
 
 }
@@ -864,7 +867,7 @@ void Board::calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t oppon
 int Board::getWhitePieceTypeOnSquare(int square) {
     //loop over white bitboards to find, if there is, the piece type on the specified square
     for(int pieceType = K; pieceType <= P; pieceType++) {
-        if(get_bit(whiteBitboards[pieceType], square)) return pieceType;
+        if(get_bit(pieces_bb[WHITE][pieceType], square)) return pieceType;
     }
     return -1;
 }
@@ -872,7 +875,7 @@ int Board::getWhitePieceTypeOnSquare(int square) {
 int Board::getBlackPieceTypeOnSquare(int square) {
     //loop over white bitboards to find, if there is, the piece type on the specified square
     for(int pieceType = K; pieceType <= P; pieceType++) {
-        if(get_bit(blackBitboards[pieceType], square)) return pieceType;
+        if(get_bit(pieces_bb[BLACK][pieceType], square)) return pieceType;
     }
     return -1;
 }
@@ -975,9 +978,9 @@ movesList Board::calculateMoves(uint64_t colorToMoveBitboards[6], uint64_t oppon
 }
 
 movesList Board::calculateWhiteMoves() {
-    return calculateMoves(whiteBitboards, blackBitboards);
+    return calculateMoves(pieces_bb[WHITE], pieces_bb[BLACK]);
 }
 
 movesList Board::calculateBlackMoves() {
-    return calculateMoves(blackBitboards, whiteBitboards);
+    return calculateMoves(pieces_bb[BLACK], pieces_bb[WHITE]);
 }
