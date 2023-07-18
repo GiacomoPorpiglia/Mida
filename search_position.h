@@ -121,15 +121,16 @@ static inline bool isInsufficientMaterial()
     return ((board.whitePiecesValue <= pieceValues[B]) && (board.blackPiecesValue <= pieceValues[B]) && !pieces_bb[WHITE][P] && !pieces_bb[BLACK][P]);
 }
 
-static inline bool isEndgame() {
-    return (board.whitePiecesValue+board.blackPiecesValue < 2000);
+static inline bool isEndgame()
+{
+    return (board.whitePiecesValue + board.blackPiecesValue < 2000);
 }
 
 // negamax alpha beta search
-static inline int search(int depth, int alpha, int beta, int doNull)
+static inline int search(int depth, int alpha, int beta, bool doNull)
 {
 
-    int evaluation;
+    int evaluation, static_eval;
 
     // define hash flag
     int hash_f = HASH_FLAG_ALPHA;
@@ -180,10 +181,20 @@ static inline int search(int depth, int alpha, int beta, int doNull)
     if (board.isInCheck)
         depth++;
 
-    doNull = doNull && !isEndgame(); // if we are in late endgame we disable the null move pruning (for Zugzwang type of positions) (v1.1)
+    //we calculate the static eval in this condition, because it is the same condition of reverse futility pruning and razoring, which both need the static eval
+    if ((depth <= 3) && !pv_node && !board.isInCheck)
+        static_eval = evaluate();
 
-    // null move pruning
-    if (doNull && (depth >= 3) && !board.isInCheck && moveList.count && ply)
+    // reverse futility pruning (v1.2) (inspired from Avalanche engine implementation)
+    if ((depth <= 3) && !pv_node && !board.isInCheck) {
+        int margin = depth * 200;
+        if ((static_eval - margin) >= beta)
+            //return beta;
+            return static_eval-margin;
+    }
+
+    // null move pruning (in v1.2 a more aggressive prunign is introduced, with reduction increasing with depth)
+    if (doNull && !isEndgame() && (depth >= 3) && !board.isInCheck && moveList.count && ply)
     {
 
         repetition_index++;
@@ -196,9 +207,11 @@ static inline int search(int depth, int alpha, int beta, int doNull)
 
         ply++;
 
+        int R = depth > 6 ? 3 : 2;
+
         /* search moves with reduced depth to find beta cutoffs
         depth - 1 - R where R is a reduction limit */
-        evaluation = -search(depth - 1 - 2, -beta, -beta + 1, 0);
+        evaluation = -search(depth - 1 - R, -beta, -beta + 1, false);
 
         // restore board state
         ply--;
@@ -211,16 +224,16 @@ static inline int search(int depth, int alpha, int beta, int doNull)
             return 0;
 
         // fail-hard beta cutoff
-        if (evaluation >= beta)
-            // node (move) fails high
-            return beta;      
+        if (evaluation >= beta) {
+            return beta;
+        }
     }
 
-    //razoring
-    if (!pv_node && !board.isInCheck && (depth <= 3))
+    // razoring
+    if ((depth <= 3) && !pv_node && !board.isInCheck)
     {
         // add first bonus
-        evaluation = evaluate() + 125;
+        evaluation = static_eval + 125;
         // define new score
         int new_eval;
 
@@ -228,7 +241,8 @@ static inline int search(int depth, int alpha, int beta, int doNull)
         if (evaluation < beta)
         {
             // on depth 1
-            if (depth == 1) {
+            if (depth == 1)
+            {
                 // get quiscence score
                 new_eval = quiescence(alpha, beta);
                 // return quiescence score if it's greater then static evaluation score
@@ -251,11 +265,11 @@ static inline int search(int depth, int alpha, int beta, int doNull)
         }
     }
 
+
     // if we are now followig PV line
     if (follow_pv)
         // enable PV move scoring
         enable_pv_scoring(moveList);
-    
 
     // sort moves
     sortMoves(moveList, best_move);
@@ -295,13 +309,13 @@ static inline int search(int depth, int alpha, int beta, int doNull)
 
             // full depth search
             if (moves_searched == 0)
-                evaluation = -search(depth - 1, -beta, -alpha, 1);
+                evaluation = -search(depth - 1, -beta, -alpha, doNull);
             // LMR (late move reduction)
             else
             {
                 // condition to consider late move reduction (LMR)
                 if (moves_searched >= fullDepthMoves && depth >= reductionLimit && is_ok_to_reduce)
-                    evaluation = -search(depth - 2, -alpha - 1, -alpha, 1); // search move with a reduced search
+                    evaluation = -search(depth - 2, -alpha - 1, -alpha, doNull); // search move with a reduced search
 
                 else
                     // hack to ensure that full earch is done
@@ -316,7 +330,7 @@ static inline int search(int depth, int alpha, int beta, int doNull)
                         the rest of the moves are searched with the goal of proving that they are all bad.
                         It's possible to do this a bit faster than a search that worries that one
                         of the remaining moves might be good. */
-                    evaluation = -search(depth - 1, -alpha - 1, -alpha, 1);
+                    evaluation = -search(depth - 1, -alpha - 1, -alpha, doNull);
                     /*  If the algorithm finds out that it was wrong, and that one of the
                         subsequent moves was better than the first PV move, it has to search again,
                         in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
@@ -324,7 +338,7 @@ static inline int search(int depth, int alpha, int beta, int doNull)
                         "bad move proof" search referred to earlier. */
                     if ((evaluation > alpha) && (evaluation < beta))
                         // research the move  that has failed to be proved to be bad
-                        evaluation = -search(depth - 1, -beta, -alpha, 1);
+                        evaluation = -search(depth - 1, -beta, -alpha, doNull);
                 }
             }
 
@@ -441,7 +455,7 @@ static inline void search_position(int maxDepth)
         follow_pv = 1;
 
         // search at the current depth
-        evaluation = search(curr_depth, alpha, beta, 1);
+        evaluation = search(curr_depth, alpha, beta, true);
         // we fell outside the window, so try again with a full-width window (and the same depth)
         if ((evaluation <= alpha) || (evaluation >= beta))
         {

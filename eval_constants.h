@@ -162,14 +162,13 @@ const int attackerWeight[6] = {
     0, 80, 40, 20, 20, 0
 };
 //attackWeight indexed by number of attackers
-const int attackWeight[8] = {
-    0,
-    0,
-    50,
-    75,
-    88,
-    94,
-    97,
-    99
+const int attackWeight[7][2] = {
+    {0,0},
+    {53,51},
+    {84,70},
+    {97,87},
+    {87,97},
+    {90, 102},
+    {96, 100}
 };
 #endif
