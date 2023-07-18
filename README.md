@@ -113,9 +113,13 @@ Obviously, there is MUCH more to pure Alpha-Beta pruning in a chess engine. In f
 
 <br />
 
-The engine is at around 2200 ELO, since against VICE(another chess engine rated around 2000 ELO), it performed with 11 wins, 2 losses and 2 draws in 15 games with a 3+1 time control.
-With this said, the evaluation obviously needs a lot of testing and tweaking to be improved, but I'm happy with the results, given the fact that I don't want to make the next Stockfish or anything superhigh-level. <br />
-I would like to put my engine on [CCRL(https://ccrl.chessdom.com/ccrl/4040/)], a website that makes hundreds of engines play in games against each other, and ranks them by giving them an ELO score. I tried to contact the administrators, so we'll see :)
+
+## Engine strength
+
+- v1.0: ~2230 ELO in [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+
+- v1.1: +~50 ELO than v1.0, not tested on CCRL.
+- v1.2: +~150 ELO than v1.0, yet to be tested on CCRL.
 
 
 
@@ -128,9 +132,10 @@ g++ mida_engine.cpp -O3 -w -o bin/mida_engine.exe
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
 The most useful are:
 
-* position fen <fen_string> to load a position from its FEN string
-* go perft <search_depth> to run a performance test (count how many positions occur at a certain depth starting from a certain position)
-* go depth <search_depth> to get the best move according to the engine up to a certain depth <search_depth>, starting from a previously loaded position
+* "position startpos" to initialize the engine to the starting position
+* "position fen <fen_string>" to load a position from its FEN string
+* "go perft <search_depth>" to run a performance test (count how many positions occur at a certain depth starting from a certain position)
+* "go depth <search_depth>" to get the best move according to the engine up to a certain depth <search_depth>, starting from a previously loaded position
 
 
 
@@ -141,3 +146,10 @@ The main updates in v1.1 are:
 * 10% increment in computed nodes per second.
 * New evaluation function (not in its parameters, but much more readable and easily changable).
 * Space evaluation and king on open flank.
+
+# v1.2 Updates
+This version has its main updates in the search function.
+- Reverse futility pruning.
+- More aggressive null move pruning.
+
+There was also un upgrade in the evaluation function, regarding the evaluatin of an attack, modifying the already existing one inspred by [Loki engine](https://github.com/BimmerBass/Loki)
