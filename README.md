@@ -117,8 +117,7 @@ Obviously, there is MUCH more to pure Alpha-Beta pruning in a chess engine. In f
 ## Engine strength
 
 - v1.0: ~2230 ELO in [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-
-- v1.1: +~50 ELO than v1.0, not tested on CCRL.
+- v1.1: ~2320 ELO in [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
 - v1.2: +~150 ELO than v1.0, yet to be tested on CCRL.
 
 
