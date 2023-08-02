@@ -450,7 +450,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 1.3\n");
+    printf("id name MIDA 1.2.1\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -495,7 +495,7 @@ void uci_loop()
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 1.3\n");
+            printf("id name MIDA 1.2.1\n");
             printf("id author Giacomo Porpiglia\n");
             printf("uciok\n");
         }
