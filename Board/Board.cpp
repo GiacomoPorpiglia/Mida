@@ -1,6 +1,9 @@
 #include "Board.h"
 #include "../constants.h"
-#include "../eval_constants.h"
+#include "../evaluate.h"
+#include "../magic_bitboards.h"
+#include "../bitboard.h"
+#include "../game_constants.h"
 
 
 // using namespace std;

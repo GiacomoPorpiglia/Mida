@@ -1,17 +1,10 @@
-
-#include "constants.h"
 #include "magic_bitboards.h"
-#include "bb_helpers.h"
 #include "board_declaration.h"
-#include "uci.h"
 #include "hashing.h"
-#include "game_constants.h"
-#include "make_move.h"
-#include "eval_constants.h"
-#include "move_ordering.h"
-#include "perft.h"
+#include "uci.h"
 #include "evaluate.h"
-#include "search_position.h"
+#include "constants.h"
+#include <iostream>
 
 using namespace std;
 
@@ -22,7 +15,7 @@ void init_all() {
     clearTranspositionTable();
 }
 
-
+//__declspec(dllexport)
 int main() {
     init_all();
     board.loadFenPosition(startpos);

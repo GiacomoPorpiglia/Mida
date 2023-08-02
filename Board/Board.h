@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 #include "../constants.h"
-#define CH char
-#define MOVE uint16_t
 
 
 

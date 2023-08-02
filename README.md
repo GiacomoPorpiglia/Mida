@@ -125,7 +125,7 @@ Obviously, there is MUCH more to pure Alpha-Beta pruning in a chess engine. In f
 ## How to use
 To compile the code, just run the command:
 ```
-g++ mida_engine.cpp -O3 -w -o bin/mida_engine.exe
+g++ *.cpp Board/Board.cpp -O3 -w -o mida_engine.exe
 ```
 
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
@@ -139,7 +139,7 @@ The most useful are:
 
 
 
-# v1.1 updates
+# v1.1 Updates
 The main updates in v1.1 are:
 
 * 10% increment in computed nodes per second.
@@ -150,5 +150,10 @@ The main updates in v1.1 are:
 This version has its main updates in the search function.
 - Reverse futility pruning.
 - More aggressive null move pruning.
+
+# v1.2.1 Updates
+This was more of a patch. I refactored all the code into proper c++ code.
+The only change was a more aggressive late move reduction, reducing by 1 the first 6 moves and the others by depth/3.
+The code refactoring made the execuction slightly slower by a ~10%, but I chose to keep this implementation because in my opinion a nicely written code is more important. Also, I will attempt to bring back the original performance, and I hope the new late move reduction can try to compensate for now.
 
 There was also un upgrade in the evaluation function, regarding the evaluatin of an attack, modifying the already existing one inspred by [Loki engine](https://github.com/BimmerBass/Loki)
