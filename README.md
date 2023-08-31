@@ -57,6 +57,7 @@ The most useful are:
 For this project I used a lot of awesome resources:
 - [Chess programming Wiki](https://www.chessprogramming.org/Main_Page)
 - [Chess programming Youtube Series by Maksim Korzh](https://www.youtube.com/watch?v=QUNP-UjujBM&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
+- [dshawul](https://github.com/dshawul) and his [NNUE-probe library](https://github.com/dshawul/nnue-probe)
 
 I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 
