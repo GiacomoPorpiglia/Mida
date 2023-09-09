@@ -29,8 +29,6 @@ public:
     const int KNIGHT_OFFSETS[8] = {6, 15, 17, 10, -6, -15, -17, -10};
     uint64_t NOT_FILES_KNIGHT[8] = {GH_FILE, H_FILE, A_FILE, AB_FILE, AB_FILE, A_FILE, H_FILE, GH_FILE};
 
-    movesList totalMoves;
-
     CH allPieces[64] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
     uint16_t boardSpecs = 0; // indices:  enPassant=0, whiteCastleKing=1, whiteCcastleQueen=2, blackCastleKing=3, blackCcastleQueen=4 values: 0 or 1 for everyone except en passant. en passant values: -1 if not allowed, square index if ep-capture allowed on that square
@@ -60,13 +58,13 @@ public:
     int kingPos;
 
     void pretty_print_bb(uint64_t bb);
-    movesList calculateMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6]);
-    movesList calculateWhiteMoves();
-    movesList calculateBlackMoves();
+    void calculateMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], movesList *moveList);
+    void calculateWhiteMoves(movesList *moveList);
+    void calculateBlackMoves(movesList *moveList);
     void calculateAttackedSquares(uint64_t opponentBitboards[6]);
     void reset();
     void loadFenPosition(string fen);
-
+    bool inCheck();
     void getTotalAttackedSquares(uint64_t occupancy);
 
     int getWhitePieceTypeOnSquare(int square);
@@ -77,6 +75,12 @@ public:
     uint64_t blackPawnsAttacks(uint64_t pawn_bb);
     uint64_t pawnsAttacks(uint64_t pawn_bb, int side);
     uint64_t get_occupancy();
+    uint64_t get_white_occupancy();
+    uint64_t get_black_occupancy();
+
+    uint64_t attackersForSide(int color, int sq, uint64_t occupancy);
+    uint64_t allAttackers(int sq, uint64_t occupancy);
+
 private:
 
     //bitboard of pinned pieces of the color to move
@@ -98,12 +102,8 @@ private:
     uint64_t blackCastleQueenPath = 1008806316530991104;
 
     int positionFromCoord(string coord);
-    uint64_t knightMap(int square);
     uint64_t whitePawnPushMap(int square, uint64_t occupancy);
-    uint64_t whitePawnAttackMap(int square);
     uint64_t blackPawnPushMap(int square, uint64_t occupancy);
-    uint64_t blackPawnAttackMap(int square);
-    uint64_t kingMap(int square);
     void findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy);
 
     uint64_t plus1(int square, int max = 8);
@@ -119,8 +119,58 @@ private:
 
     void calculatePinnedPieces(uint64_t opponentBitboards[6], uint64_t colorToMoveOccupiedBB, uint64_t opponentOccupiedBB);
     bool isEnPassantPinned(int enPassantCapturePos, int piecePos, uint64_t opponentBitboards[6]);
-    void addMoves(int squareFrom, uint64_t bb, int pieceType);
-    void calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], int isInCheckByPawn);
+    void addMoves(int squareFrom, uint64_t bb, int pieceType, movesList *moveList);
+    void calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], int isInCheckByPawn, movesList *moveList);
 };
+
+inline uint64_t Board::get_occupancy()
+{
+    return pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P] | pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
+}
+
+inline uint64_t Board::get_white_occupancy()
+{
+    return pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P];
+}
+inline uint64_t Board::get_black_occupancy()
+{
+    return pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
+}
+
+inline uint64_t Board::allAttackers(int sq, uint64_t occupancy)
+{
+    return attackersForSide(WHITE, sq, occupancy) | attackersForSide(BLACK, sq, occupancy);
+}
+
+inline void Board::calculateWhiteMoves(movesList *moveList)
+{
+    calculateMoves(pieces_bb[WHITE], pieces_bb[BLACK], moveList);
+}
+
+inline void Board::calculateBlackMoves(movesList *moveList)
+{
+    calculateMoves(pieces_bb[BLACK], pieces_bb[WHITE], moveList);
+}
+
+
+inline uint64_t Board::whitePawnsAttacks(uint64_t pawn_bb)
+{
+    return (((pawn_bb << 7) & ~H_FILE) | ((pawn_bb << 9) & ~A_FILE));
+}
+inline uint64_t Board::blackPawnsAttacks(uint64_t pawn_bb)
+{
+    return (((pawn_bb >> 7) & ~A_FILE) | ((pawn_bb >> 9) & ~H_FILE));
+}
+inline uint64_t Board::pawnsAttacks(uint64_t pawn_bb, int side)
+{
+    // white
+    return (side == WHITE ? whitePawnsAttacks(pawn_bb) : blackPawnsAttacks(pawn_bb));
+}
+
+inline int Board::getPieceTypeOnSquare(int square) {
+    int whiteType = getWhitePieceTypeOnSquare(square);
+    int blackType = getBlackPieceTypeOnSquare(square);
+    return (whiteType > blackType) ? whiteType : blackType;
+}
 
 #endif

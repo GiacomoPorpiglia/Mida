@@ -185,11 +185,12 @@ void communicate()
 
 static inline MOVE parse_move(char const *move_string)
 {
+    movesList moveList;
     // create move list instance
     if (board.colorToMove == 1)
-        board.calculateWhiteMoves();
+        board.calculateWhiteMoves(&moveList);
     else
-        board.calculateBlackMoves();
+        board.calculateBlackMoves(&moveList);
 
     // parse source square
     int source_square = (move_string[0] - 'a') + (move_string[1] - '1') * 8;
@@ -198,9 +199,9 @@ static inline MOVE parse_move(char const *move_string)
     int target_square = (move_string[2] - 'a') + (move_string[3] - '1') * 8;
 
     // loop over the moves within a move list
-    for (int count = 0; count < board.totalMoves.count; count++)
+    for (int count = 0; count < moveList.count; count++)
     {
-        MOVE move = board.totalMoves.moves[count];
+        MOVE move = moveList.moves[count];
         // make sure source & target squares are available within the generated move
         if (source_square == getSquareFrom(move) && target_square == getSquareTo(move))
         {

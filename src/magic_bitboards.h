@@ -32,9 +32,18 @@ unsigned int generate_random_number();
 uint64_t random_uint64_t();
 
 // get random few bits
-uint64_t random_fewbits();
+// get random few bits
+static inline uint64_t random_fewbits()
+{
+    return random_uint64_t() & random_uint64_t() & random_uint64_t();
+}
 // get index of LS1B in bitboard
-static inline int get_ls1b_index(uint64_t bitboard);
+// get index of LS1B in bitboard
+static inline int get_ls1b_index(uint64_t bitboard)
+{
+    // make sure bitboard is not empty
+    return (bitboard ? count_bits((bitboard & -bitboard) - 1) : -1);
+}
 
 // set occupancies
 uint64_t set_occupancy(int index, int bits_in_mask, uint64_t attack_mask);

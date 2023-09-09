@@ -25,17 +25,22 @@ The search is based on Alpha-beta pruning algorithm, with various techniques (li
 * Reverse futility pruning
 * Null move pruning
 * Razoring
+* Mate distance pruning
+* Late move pruning
+* Futility pruning
+* SEE (static exchange evaluation) used in move ordering as well as pruning for quiet and non-quiet moves
 * Late move reduction
 * Delta pruning
+
 <br />
 
 ## Engine strength
 
 - v1.0: ~2230 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-
-- v1.1: ~2325 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) .
-- v1.2: Not tested on CCRL.
+- v1.1: ~2325 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
+- v1.2: Not tested on CCRL ~2355 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
 - v2.0: Not tested on CCRL
+- v2.1 Not tested on CCRL. Should be in the 2800-2900 ELO range
 
 
 
@@ -78,3 +83,11 @@ This version has its main updates in the search function.
 - Introducing NNUE evaluation
 - Delta pruning
 - Fixed bug in null move pruning
+
+
+# v2.1 Updates
+- Mate distance pruning
+- Late move pruning
+- Futility pruning
+- SEE (static exchange evaluation) for move ordering as well as pruning techniques
+- Fixed bug in history moves 

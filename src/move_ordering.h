@@ -9,6 +9,13 @@
 
 #include "board_declaration.h"
 
+
+#define WinningCaptureScore 1000000
+#define firstKillerScore 900000
+#define secondKillerScore 800000
+#define bestMoveScore 3000000
+#define pvMoveScore 2000000
+
 // most valuable victim - least valuable attacker table
 /*
 
