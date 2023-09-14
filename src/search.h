@@ -26,6 +26,12 @@ extern int LMP_table[8];
 extern int LMRBase;
 extern int LMRDivision;
 
+typedef struct {
+    int static_eval[max_ply];
+} SearchStack;
+
+extern SearchStack ss;
+
 // returns true if the position is  draw for unsufficient material
 static inline bool isInsufficientMaterial();
 static inline uint64_t nonPawnMat(int side);

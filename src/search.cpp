@@ -21,6 +21,9 @@ int LMP_table[8];
 int LMRBase = 75;
 int LMRDivision = 300;
 
+SearchStack ss;
+
+
 void init_search() {
     //Init LMR table
     float base = LMRBase / 100.0f;
@@ -59,8 +62,6 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     int newPieceType = getNewPieceType(move);
 
     DirtyPiece* dp = &(nn_stack[ply].dirtyPiece);
-
-    // (*dp)={};
 
     dp->dirtyNum=1;
     
@@ -154,10 +155,10 @@ static inline int quiescence(int alpha, int beta)
     sortMoves(moveList, 0);
     MOVE move;
     int playedCount = 0; //counter of played moves
-    for (int moveCount = 0; moveCount < (*moveList).count; moveCount++)
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++)
     {
         pickNextMove(moveList, moveCount);
-        move = (*moveList).moves[moveCount];
+        move = moveList->moves[moveCount];
         
 
         // only look at captures and promotions
@@ -167,7 +168,7 @@ static inline int quiescence(int alpha, int beta)
             /*
             In quiescence, we can skip captures evaluated as losing by SEE with confidence that they will not result in a better position
             */
-            if ((*moveList).move_scores[moveCount] < WinningCaptureScore && playedCount >= 2)
+            if (moveList->move_scores[moveCount] < WinningCaptureScore && playedCount >= 1)
             {
                 continue;
             }
@@ -274,6 +275,10 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     //we calculate the static eval in this condition, because it is the same condition of reverse futility pruning and razoring, which both need the static eval
     static_eval = evaluate<true>();
 
+    ss.static_eval[ply] = static_eval;
+
+    bool improving = ply >= 4 && !in_check && (ss.static_eval[ply] > (ss.static_eval[ply-2]+10)) && (ss.static_eval[ply-2] > (ss.static_eval[ply-4]+10));
+
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
@@ -296,8 +301,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             unsetEnPassantSquare(board.boardSpecs);
 
             ply++;
-
-            int R = 2 + depth / 3; // depth > 6 ? 3 : 2;  could prove useful in the future;
+            int R = 3 + depth / 3;
 
             /* search moves with reduced depth to find beta cutoffs
             depth - 1 - R where R is a reduction limit */
@@ -319,7 +323,6 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 return evaluation;
             }
         }
-
 
 
         //razoring (inspired from Strelka)
@@ -382,7 +385,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
 
 
 
-    if ((*moveList).count == 0)
+    if (moveList->count == 0)
     {
         if (in_check)
             return -MATE_VALUE + ply; // checkmate
@@ -405,10 +408,10 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
         MOVE move;
         int quietMoveCount=0;
         bool skip_quiet_moves = false;
-        for (int moveCount = 0; moveCount < (*moveList).count; moveCount++)
+        for (int moveCount = 0; moveCount < moveList->count; moveCount++)
         {
             pickNextMove(moveList, moveCount);
-            move = (*moveList).moves[moveCount];
+            move = moveList->moves[moveCount];
 
 
             int oldPieceType = board.allPieces[getSquareFrom(move)];
@@ -479,7 +482,14 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 // condition to consider late move reduction (LMR)
                 if ((moveCount >= 4) && (depth >= 3) && is_ok_to_reduce)
                 {
-                    int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)]; //  (moveCount < 10) ? 1 : depth / 3;       // reduce the first 6 moves by 1, and the other moves (more unlikely than the previous ones) by depth / 3
+                    int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
+
+                    // R += !pv_node;
+                    // R += !improving;
+                    // R -= history_moves[board.colorToMove][oldPieceType][getSquareTo(move)]/2000;
+
+                    R = std::min(depth - 1, std::max(1, R));
+
                     evaluation = -search(depth - 1 - R, -alpha - 1, -alpha, true); // search move with a reduced search
                 }
 
