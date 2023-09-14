@@ -17,7 +17,7 @@
 #define MATE_VALUE 49000
 
 #define HASH_TABLE_SIZE 8000000 // 200 MB
-#define NULL_HASH_ENTRY 0  // to make sure it goes outside the alpha-beta window
+#define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
 
 #define WHITE 1
 #define BLACK 0
