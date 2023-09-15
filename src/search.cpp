@@ -484,11 +484,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
-                    // R += !pv_node;
-                    // R += !improving;
-                    // R -= history_moves[board.colorToMove][oldPieceType][getSquareTo(move)]/2000;
+                    // R += !pv_node; // increase reduction if we it's not a pv-node
+                    // R += !improving; // increase reduction if we are not improving
+                    // R -= history_moves[!board.colorToMove][oldPieceType][getSquareTo(move)]/2000; // decrease reduction if the move has a high history score (it's more likely to cause a cutoff, so we want to search it deeper). NOTE: we use !board.colorToMove because it was changed inside playMove();
 
-                    R = std::min(depth - 1, std::max(1, R));
+                    R = std::min(depth - 2, std::max(1, R)); // make sure we don't end up in quiescence
 
                     evaluation = -search(depth - 1 - R, -alpha - 1, -alpha, true); // search move with a reduced search
                 }
