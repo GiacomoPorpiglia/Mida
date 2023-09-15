@@ -7,7 +7,6 @@
 #include "nnue.h"
 
 template <bool useIncrementalNNUE> int evaluate();
-extern NNUEdata nn;
 extern NNUEdata nn_stack[max_ply+1];
 
 extern int nnue_pieces[33];
