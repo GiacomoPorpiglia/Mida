@@ -1,3 +1,14 @@
+
+<div align="center">
+
+<b><i>Strong UCI chess engine written in C++</i></b>
+
+<img alt="GitHub all releases" src="https://img.shields.io/github/downloads/GiacomoPorpiglia/Mida/total?style=for-the-badge">
+<a href="./LICENSE"></a><img src="https://img.shields.io/github/license/GiacomoPorpiglia/Mida?style=for-the-badge">
+<img src="https://img.shields.io/github/v/release/GiacomoPorpiglia/Mida?style=for-the-badge">
+<img src="https://img.shields.io/github/last-commit/GiacomoPorpiglia/Mida?style=for-the-badge">
+</div>
+
 # Overview
 Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for evaluation. </br>
 
