@@ -106,4 +106,4 @@ This version has its main updates in the search function.
 - Futility pruning
 - SEE (static exchange evaluation) for move ordering as well as pruning techniques
 - Fixed bug in history moves
-- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a searcha and not a simple positional evaluation.
+- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.
