@@ -43,6 +43,10 @@ The search is based on Alpha-beta pruning algorithm, with various techniques (li
 * Late move reduction
 * Delta pruning
 
+To add:
+* "Improving cuts": I don't know if that's the proper name of the technique or if it even has a name. 
+Basically, the idea is to see if by going down a branch we are finding better positions (so, if we are improving), and if we are, we want to search that branch deeper. On the contrary, if we are not improving, chances are that's not going to be a good branch, and so we can prune and reduce it more aggressively.
+
 <br />
 
 ## Engine strength
