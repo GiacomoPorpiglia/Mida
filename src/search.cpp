@@ -201,12 +201,21 @@ static inline int quiescence(int alpha, int beta)
             if (stopped == 1)
                 return 0;
 
-            if (evaluation >= beta)
-                return beta;
             if (evaluation > alpha)
             {
                 alpha = evaluation;
+                if (evaluation >= beta)
+                {    
+                    return evaluation;
+                }
             }
+
+            // if (evaluation >= beta)
+            //     return beta;
+            // if (evaluation > alpha)
+            // {
+            //     alpha = evaluation;
+            // }
         }
     }
     return alpha;
@@ -227,7 +236,7 @@ static inline uint64_t nonPawnMat(int side)
 static inline int search(int depth, int alpha, int beta, bool doNull)
 {
 
-    int evaluation, static_eval;
+    int evaluation, static_eval=0;
 
     // define hash flag
     int hash_f = HASH_FLAG_ALPHA;
@@ -245,9 +254,15 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     bool pv_node = (beta - alpha) > 1;
     bool is_root = (ply==0);
     // read hash entry
-    static_eval = readHashEntry(depth, alpha, beta, best_move);
-    if (ply && !pv_node && (static_eval != NULL_HASH_ENTRY))
-        return static_eval;
+    tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
+    if (ttEntry!=nullptr && ply && !pv_node) {
+        static_eval = ttEntry->value;
+        if(ttEntry->depth>=depth && 
+           (ttEntry->flag==HASH_FLAG_EXACT || 
+          (ttEntry->flag==HASH_FLAG_ALPHA && ttEntry->value<=alpha) || 
+          (ttEntry->flag==HASH_FLAG_BETA && ttEntry->value >= beta)))
+            return static_eval;
+    }
 
     // every 2047 nodes
     if ((nodes & 2047) == 0)
@@ -273,11 +288,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
         depth++;
 
     //we calculate the static eval in this condition, because it is the same condition of reverse futility pruning and razoring, which both need the static eval
-    static_eval = evaluate<true>();
+    static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
 
     ss.static_eval[ply] = static_eval;
 
-    bool improving = ply >= 4 && !in_check && (ss.static_eval[ply] > (ss.static_eval[ply-2]+10)) && (ss.static_eval[ply-2] > (ss.static_eval[ply-4]+10));
+    bool improving = ply >= 4 && !in_check && (ss.static_eval[ply] > (ss.static_eval[ply-2]+25)) && (ss.static_eval[ply-2] > (ss.static_eval[ply-4]+25));
 
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
@@ -581,7 +596,7 @@ static inline void print_move(MOVE move)
     printf("%s", coordFromPosition[getSquareFrom(move)]); // board.coordFromBitboardPosition((int)getSquareFrom(move)).c_str());
     printf("%s", coordFromPosition[getSquareTo(move)]);   // board.coordFromBitboardPosition((int)getSquareTo(move)).c_str());
     // promotion
-    if ((getNewPieceType(move)) != (int)board.allPieces[(getSquareFrom(move))] && (int)board.allPieces[(getSquareFrom(move))] == 5)
+    if (getNewPieceType(move) != P && board.allPieces[getSquareFrom(move)] == P)
     {
         if (getNewPieceType(move) == Q)
             printf("q");
