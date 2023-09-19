@@ -287,7 +287,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     if(in_check)
         depth++;
 
-    //we calculate the static eval in this condition, because it is the same condition of reverse futility pruning and razoring, which both need the static eval
+    /*
+    if we have the static_eval from the tt entry, we can use it because it is more accurate than the evaluation of the position from the NN, because it comes from a search (even if at shallow depth). 
+    The reason why I still add it the NN eval and do a weighted avg is because I haven't found a way to make the NN work without evaluating every single position. 
+    So, I still have to evaluate the position even if I could use only the tt entry eval. :(
+    */
     static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
 
     ss.static_eval[ply] = static_eval;
