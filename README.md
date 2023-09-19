@@ -53,9 +53,9 @@ Basically, the idea is to see if by going down a branch we are finding better po
 
 - v1.0:   ~2230 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
 - v1.1:   ~2325 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
-- v1.2.1: ~2355 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-- v2.0:   Not tested on CCRL.
-- v2.1:   Not tested on CCRL. Should be in the 2800-2900 ELO range
+- v1.2.1: ~2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+- v2.0:   Not tested on CCRL. Should be in the 2600 ELO range
+- v2.1:   Not tested on CCRL. Should be in the 2900 ELO range
 
 
 
