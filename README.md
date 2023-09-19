@@ -12,6 +12,17 @@
 # Overview
 Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for evaluation. </br>
 
+
+## Engine strength
+
+- v2.1:   Not tested on CCRL. Should be in the 2900 ELO range
+- v2.0:   Not tested on CCRL. Should be in the 2600 ELO range
+- v1.2.1: 2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+- v1.1:   2331 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
+- v1.0:   2233 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+
+
+
 ## Representation of the board
 To represent various board states, most chess engines, including Mida, use <b>bitboards</b>, which are 64-bits unsigned integers: this representation is convenient because there are 64 squares on a chess board: therefore, we can represent the occupied squares, attacked squares ecc... by setting to 1 (or "hot") the bits that correspond to an occupied or attacked square, for example. <br />
 This implementation is faster because bit-wise operations are very efficient. You can explore further [here](https://www.chessprogramming.org/Bitboards), understanding the full potential of bitboards implementation. 
@@ -28,7 +39,6 @@ The network was very briefly trained, because for now that's not what I want to 
 <br />
 
 ## Search
-<br />
 The search is based on Alpha-beta pruning algorithm, with various techniques (like prunings and reductions) to reduce the number of visited nodes:
 
 * Move ordering (MMV/LVA)
@@ -48,16 +58,6 @@ To add:
 Basically, the idea is to see if by going down a branch we are finding better positions (so, if we are improving), and if we are, we want to search that branch deeper. On the contrary, if we are not improving, chances are that's not going to be a good branch, and so we can prune and reduce it more aggressively.
 
 <br />
-
-## Engine strength
-
-- v1.0:   ~2230 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-- v1.1:   ~2325 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
-- v1.2.1: ~2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-- v2.0:   Not tested on CCRL. Should be in the 2600 ELO range
-- v2.1:   Not tested on CCRL. Should be in the 2900 ELO range
-
-
 
 ## How to use
 To compile the code, just run the command:
@@ -105,4 +105,5 @@ This version has its main updates in the search function.
 - Late move pruning
 - Futility pruning
 - SEE (static exchange evaluation) for move ordering as well as pruning techniques
-- Fixed bug in history moves 
+- Fixed bug in history moves
+- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a searcha and not a simple positional evaluation.
