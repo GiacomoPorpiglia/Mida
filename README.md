@@ -62,7 +62,7 @@ Basically, the idea is to see if by going down a branch we are finding better po
 ## How to use
 To compile the code, just run the command:
 ```
-g++ *.cpp -O3 -w -o mida_engine.exe
+ g++ -static *.cpp -O3 -w -o ../mida_engine.exe
 ```
 
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
