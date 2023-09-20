@@ -60,7 +60,7 @@ Basically, the idea is to see if by going down a branch we are finding better po
 <br />
 
 ## How to use
-To compile the code, just run the command:
+To compile the code, just run the commands:
 ```
  cd src
  g++ -static *.cpp -O3 -w -o ../mida_engine.exe
