@@ -102,7 +102,7 @@ void init_random_keys()
 }
 
 // read entry from the transposition table
-int readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
+tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
 {
     // addressing the location of the entry we want to read
     tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_SIZE];
@@ -111,31 +111,15 @@ int readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
     // we start by comparing the current hash key with the one stored in the address
     if (hash_entry->hash_key == hash_key)
     {
-        // then we compare the depths
-        if (hash_entry->depth >= depth)
-        {
-
-            int evaluation = hash_entry->value;
-
-            // retrieve the score independent from the actual path from root node to current position
-            if (evaluation < -MATE_SCORE)
-                evaluation += ply;
-            if (evaluation > MATE_SCORE)
-                evaluation -= ply;
-
-            // match the exact score ==> return exact score
-            if (hash_entry->flag == HASH_FLAG_EXACT)
-                return evaluation;
-            // match fail-low score ==> return alpha
-            if ((hash_entry->flag == HASH_FLAG_ALPHA) && (evaluation <= alpha))
-                return alpha;
-            // match fail-high score ==> return beta
-            if ((hash_entry->flag == HASH_FLAG_BETA) && (evaluation >= beta))
-                return beta;
-        }
         best_move = hash_entry->best_move;
+        if (hash_entry->value < -MATE_SCORE)
+                hash_entry->value += ply;
+        if (hash_entry->value > MATE_SCORE)
+            hash_entry->value -= ply;
+        return hash_entry;
+        
     }
-    return NULL_HASH_ENTRY;
+    return nullptr;
 }
 
 // write hash entry in the transposition table

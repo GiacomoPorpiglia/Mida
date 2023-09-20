@@ -1,5 +1,27 @@
+
+<div align="center">
+
+<b><i>Strong UCI chess engine written in C++</i></b>
+
+<img alt="GitHub all releases" src="https://img.shields.io/github/downloads/GiacomoPorpiglia/Mida/total?style=for-the-badge">
+<a href="./LICENSE"></a><img src="https://img.shields.io/github/license/GiacomoPorpiglia/Mida?style=for-the-badge">
+<img src="https://img.shields.io/github/v/release/GiacomoPorpiglia/Mida?style=for-the-badge">
+<img src="https://img.shields.io/github/last-commit/GiacomoPorpiglia/Mida?style=for-the-badge">
+</div>
+
 # Overview
 Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for evaluation. </br>
+
+
+## Engine strength
+
+- v2.1:   Not tested on CCRL. Should be in the 2900 ELO range
+- v2.0:   Not tested on CCRL. Should be in the 2600 ELO range
+- v1.2.1: 2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+- v1.1:   2331 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
+- v1.0:   2233 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+
+
 
 ## Representation of the board
 To represent various board states, most chess engines, including Mida, use <b>bitboards</b>, which are 64-bits unsigned integers: this representation is convenient because there are 64 squares on a chess board: therefore, we can represent the occupied squares, attacked squares ecc... by setting to 1 (or "hot") the bits that correspond to an occupied or attacked square, for example. <br />
@@ -7,7 +29,7 @@ This implementation is faster because bit-wise operations are very efficient. Yo
 
 ## Move generation
 Move genearation consists in <b>generating all the legal moves for a given side and a given position</b>. While this task may seem easy at first, I can assure you will find many obstacles along the way.
-To do this, I followed [this article](https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/") that I strongly recommend.
+To do this, I followed [this article](https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/) that I strongly recommend.
 <br/>
 
 ## Evaluation
@@ -17,7 +39,6 @@ The network was very briefly trained, because for now that's not what I want to 
 <br />
 
 ## Search
-<br />
 The search is based on Alpha-beta pruning algorithm, with various techniques (like prunings and reductions) to reduce the number of visited nodes:
 
 * Move ordering (MMV/LVA)
@@ -25,24 +46,24 @@ The search is based on Alpha-beta pruning algorithm, with various techniques (li
 * Reverse futility pruning
 * Null move pruning
 * Razoring
+* Mate distance pruning
+* Late move pruning
+* Futility pruning
+* SEE (static exchange evaluation) used in move ordering as well as pruning for quiet and non-quiet moves
 * Late move reduction
 * Delta pruning
+
+To add:
+* "Improving cuts": I don't know if that's the proper name of the technique or if it even has a name. 
+Basically, the idea is to see if by going down a branch we are finding better positions (so, if we are improving), and if we are, we want to search that branch deeper. On the contrary, if we are not improving, chances are that's not going to be a good branch, and so we can prune and reduce it more aggressively.
+
 <br />
 
-## Engine strength
-
-- v1.0: ~2230 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-
-- v1.1: ~2325 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) .
-- v1.2: Not tested on CCRL.
-- v2.0: Not tested on CCRL
-
-
-
 ## How to use
-To compile the code, just run the command:
+To compile the code, just run the commands:
 ```
-g++ *.cpp -O3 -w -o mida_engine.exe
+ cd src
+ g++ -static *.cpp -O3 -w -o ../mida_engine.exe
 ```
 
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
@@ -61,6 +82,7 @@ For this project I used a lot of awesome resources:
 
 I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 
+Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
 # v1.1 updates
 The main updates in v1.1 are:
@@ -78,3 +100,12 @@ This version has its main updates in the search function.
 - Introducing NNUE evaluation
 - Delta pruning
 - Fixed bug in null move pruning
+
+
+# v2.1 Updates
+- Mate distance pruning
+- Late move pruning
+- Futility pruning
+- SEE (static exchange evaluation) for move ordering as well as pruning techniques
+- Fixed bug in history moves
+- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.

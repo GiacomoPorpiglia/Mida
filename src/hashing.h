@@ -43,7 +43,7 @@ uint64_t generate_hash_key();
 void init_random_keys();
 
 // read entry from the transposition table
-int readHashEntry(int depth, int alpha, int beta, MOVE &best_move);
+tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move);
 // write hash entry in the transposition table
 void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag);
 

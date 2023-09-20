@@ -10,12 +10,19 @@
 #include "bitboard.h"
 #include "uci.h"
 #include <cmath>
+#include "see.h"
 
 int nodes = 0;
 
+movesList mGen[max_ply];
+
 int LMR_table[max_ply][64];
+int LMP_table[8];
 int LMRBase = 75;
 int LMRDivision = 300;
+
+SearchStack ss;
+
 
 void init_search() {
     //Init LMR table
@@ -23,8 +30,12 @@ void init_search() {
     float division = LMRDivision / 100.0f;
     for(int depth = 1; depth < max_ply; depth++) {
         for(int played = 1; played < 64; played++) {
-            LMR_table[depth][played] = base + log(depth) * log(played) / division; // formula from RICE engine
+            LMR_table[depth][played] = base + log(depth) * log(played) / division; // formula from Berserk engine
         }
+    }
+
+    for(int depth = 1; depth < 8; depth++) {
+        LMP_table[depth] = 4.0 + 4 * depth * depth / 4.5;
     }
 }
 
@@ -52,12 +63,10 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
 
     DirtyPiece* dp = &(nn_stack[ply].dirtyPiece);
 
-    // (*dp)={};
-
     dp->dirtyNum=1;
     
     //castle
-    if(oldPieceType==K && abs(from-to)==2) {
+    if(isCastle(move)) {
 
         int kingSide = to > from;
         rfrom = relative_square(kingSide ? 7 : 0);
@@ -69,14 +78,14 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
         dp->to[1]    = rto;
     }
     //capture
-    else if(capturedPieceType!=NOPIECE) {
+    else if(isCapture(move)) {
         dp->dirtyNum = 2;
         dp->pc[1]    = board.colorToMove==WHITE ? (capturedPieceType+7) : (capturedPieceType+1);
         dp->from[1]  = to;
         dp->to[1]    = 64;
     }
 
-    else if (oldPieceType == P && to==getEnPassantSquare(board.boardSpecs)) {
+    else if (isEnPassant(move)) {
         dp->dirtyNum = 2;
         dp->pc[1]    = board.colorToMove==WHITE ?  pieces::bpawn : pieces::wpawn;
         dp->from[1]  = board.colorToMove==WHITE ? (to-8) : (to+8);
@@ -86,7 +95,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     dp->from[0] = from;
     dp->to[0]   = to;
     // promotion
-    if (oldPieceType != newPieceType && oldPieceType==P && !(to > 7 && to < 56))
+    if (isPromotion(move))
     {
         dp->to[0]             = 64; // pawn to SQ_NONE, promoted piece from SQ_NONE
         dp->pc[dp->dirtyNum]  = board.colorToMove==WHITE ? (newPieceType + 1) : (newPieceType+7);
@@ -136,31 +145,44 @@ static inline int quiescence(int alpha, int beta)
             return beta;
         alpha = evaluation;
     }
-    movesList moveList;
+    movesList *moveList = &mGen[ply];
     if (board.colorToMove == 1)
-        moveList = board.calculateWhiteMoves();
+        board.calculateWhiteMoves(moveList);
     else
-        moveList = board.calculateBlackMoves();
+        board.calculateBlackMoves(moveList);
 
     // sort moves
-    sortMoves(&moveList, 0);
+    sortMoves(moveList, 0);
     MOVE move;
-    for (int count = 0; count < moveList.count; count++)
-    {   
-        pickNextMove(&moveList, count);
-        move = moveList.moves[count];
-        int oldPieceType = board.allPieces[getSquareFrom(move)];
-        int capturedPieceType = board.allPieces[getSquareTo(move)];
+    int playedCount = 0; //counter of played moves
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++)
+    {
+        pickNextMove(moveList, moveCount);
+        move = moveList->moves[moveCount];
+        
+
         // only look at captures and promotions
-        if (capturedPieceType != NOPIECE)
+        if (isCapture(move) || isEnPassant(move) || isPromotion(move))
         {
+
+            /*
+            In quiescence, we can skip captures evaluated as losing by SEE with confidence that they will not result in a better position
+            */
+            if (moveList->move_scores[moveCount] < WinningCaptureScore && playedCount >= 1)
+            {
+                continue;
+            }
+
+            int oldPieceType = board.allPieces[getSquareFrom(move)];
+            int capturedPieceType = board.allPieces[getSquareTo(move)];
+
             uint16_t oldSpecs = board.boardSpecs;
 
             // make a copy of zobrist hash key, to restore it when unplaying the move
             uint64_t hash_key_copy = hash_key;
 
             fillDirtyPiece(ply+1, move);
-            
+            playedCount++;
             playMove(move);
             ply++;
             // increment repetition index & store hash key
@@ -179,23 +201,26 @@ static inline int quiescence(int alpha, int beta)
             if (stopped == 1)
                 return 0;
 
-            if (evaluation >= beta)
-                return beta;
             if (evaluation > alpha)
             {
                 alpha = evaluation;
+                if (evaluation >= beta)
+                {    
+                    return evaluation;
+                }
             }
+
+            // if (evaluation >= beta)
+            //     return beta;
+            // if (evaluation > alpha)
+            // {
+            //     alpha = evaluation;
+            // }
         }
     }
     return alpha;
 }
 
-static inline bool ok_to_reduce(MOVE move)
-{
-
-    // return true if king is not in check, move isn't a capture and move isn't a promotion
-    return (!board.isInCheck && !isCapture(move) && !isPromotion(move));
-}
 
 static inline bool isInsufficientMaterial()
 {
@@ -211,7 +236,7 @@ static inline uint64_t nonPawnMat(int side)
 static inline int search(int depth, int alpha, int beta, bool doNull)
 {
 
-    int evaluation, static_eval;
+    int evaluation, static_eval=0;
 
     // define hash flag
     int hash_f = HASH_FLAG_ALPHA;
@@ -229,10 +254,15 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     bool pv_node = (beta - alpha) > 1;
     bool is_root = (ply==0);
     // read hash entry
-    // 152000
-    evaluation = readHashEntry(depth, alpha, beta, best_move);
-    if (ply && !pv_node && (evaluation != NULL_HASH_ENTRY))
-        return evaluation;
+    tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
+    if (ttEntry!=nullptr && ply && !pv_node) {
+        static_eval = ttEntry->value;
+        if(ttEntry->depth>=depth && 
+           (ttEntry->flag==HASH_FLAG_EXACT || 
+          (ttEntry->flag==HASH_FLAG_ALPHA && ttEntry->value<=alpha) || 
+          (ttEntry->flag==HASH_FLAG_BETA && ttEntry->value >= beta)))
+            return static_eval;
+    }
 
     // every 2047 nodes
     if ((nodes & 2047) == 0)
@@ -252,28 +282,26 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
 
     nodes++;
 
-    movesList moveList;
+    bool in_check = board.inCheck();
 
-    // calculate moves
-    if (board.colorToMove == WHITE)
-        moveList = board.calculateWhiteMoves();
-    else
-        moveList = board.calculateBlackMoves();
-
-    if (board.isInCheck)
+    if(in_check)
         depth++;
 
-    if (moveList.count == 0) {
-        if (board.isInCheck)
-            return -MATE_VALUE + ply; // checkmate
-        return 0;                     // stalemate
-    }
+    /*
+    if we have the static_eval from the tt entry, we can use it because it is more accurate than the evaluation of the position from the NN, because it comes from a search (even if at shallow depth). 
+    The reason why I still add it the NN eval and do a weighted avg is because I haven't found a way to make the NN work without evaluating every single position. 
+    So, I still have to evaluate the position even if I could use only the tt entry eval. :(
+    */
+    static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
 
-    //we calculate the static eval in this condition, because it is the same condition of reverse futility pruning and razoring, which both need the static eval
-    static_eval = evaluate<true>();
+    ss.static_eval[ply] = static_eval;
 
+    bool improving = ply >= 4 && !in_check && (ss.static_eval[ply] > (ss.static_eval[ply-2]+25)) && (ss.static_eval[ply-2] > (ss.static_eval[ply-4]+25));
 
-    if(!pv_node && !board.isInCheck && !is_root) {
+    movesList *moveList = &mGen[ply];
+    bool are_moves_calculated = false;
+
+    if(!pv_node && !in_check && !is_root) {
 
         //reverse futility pruning
         if(depth < 9  && (static_eval - depth*80)>= beta)
@@ -292,8 +320,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             unsetEnPassantSquare(board.boardSpecs);
 
             ply++;
-
-            int R = 2 + depth / 3; // depth > 6 ? 3 : 2;  could prove useful in the future;
+            int R = 3 + depth / 3;
 
             /* search moves with reduced depth to find beta cutoffs
             depth - 1 - R where R is a reduction limit */
@@ -316,8 +343,9 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             }
         }
 
-        //razoring
-        if(depth <= 3) {
+
+        //razoring (inspired from Strelka)
+        if(depth <= 2) {
             // add first bonus
             evaluation = static_eval + 125;
             // define new score
@@ -352,13 +380,44 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
         }
     }
 
+
+    //mate distance pruning
+    //if a mate has been found, this pruning helps to discard all branches that can't reach mate in less plies than the current mate found.
+    int matingValue = MATE_VALUE - ply;
+    if (matingValue < beta)
+    {
+        beta = matingValue;
+        if (alpha >= matingValue)
+        {
+            return matingValue; // Beta cutoff
+        }
+    }
+
+    // calculate moves
+    if(!are_moves_calculated) {
+        if (board.colorToMove == WHITE)
+            board.calculateWhiteMoves(moveList);
+        else
+            board.calculateBlackMoves(moveList);
+    }
+    
+
+
+
+    if (moveList->count == 0)
+    {
+        if (in_check)
+            return -MATE_VALUE + ply; // checkmate
+        return 0;                     // stalemate
+    }
+
     // if we are now followig PV line
     if (follow_pv)
         // enable PV move scoring
-        enable_pv_scoring(&moveList);
+        enable_pv_scoring(moveList);
 
     // sort moves
-    sortMoves(&moveList, best_move);
+    sortMoves(moveList, best_move);
 
     if (isInsufficientMaterial())
         return 0;
@@ -366,14 +425,59 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     else
     {
         MOVE move;
-        for (int moveCount = 0; moveCount < moveList.count; moveCount++)
+        int quietMoveCount=0;
+        bool skip_quiet_moves = false;
+        for (int moveCount = 0; moveCount < moveList->count; moveCount++)
         {
-            pickNextMove(&moveList, moveCount);
-            move = moveList.moves[moveCount];
+            pickNextMove(moveList, moveCount);
+            move = moveList->moves[moveCount];
+
+
             int oldPieceType = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
             uint16_t oldSpecs = board.boardSpecs;
-            bool is_ok_to_reduce = ok_to_reduce(move);
+            
+            bool is_ok_to_reduce = !in_check && !isCapture(move) && !isPromotion(move) && !isEnPassant(move);
+
+            bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
+
+            if (is_quiet && skip_quiet_moves) 
+            {
+                continue;
+            }
+
+            if (!is_root && !in_check && is_quiet) {
+                
+                /*late move pruning
+                if the move is quiet and we have already searched enough moves before, we can skip it.
+                */
+                if (!pv_node && depth <= 7 && quietMoveCount >= LMP_table[depth])
+                {
+                    skip_quiet_moves = true;
+                    continue;
+                }
+
+                int LMRdepth = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
+                /*
+                Futility pruning; if the move is quiet and the position has low potential of raising alpha, we can skip all following quiet moves
+                */
+                if (LMRdepth <= 6 && (static_eval + 215 + 70*depth) <= alpha) {
+                    skip_quiet_moves=true;
+                }
+
+                //SEE pruning for quiets
+                if(depth <= 8 && !see(move, -70*depth)) {
+                    continue;
+                }
+            }
+            //if not quiet move
+            else {
+                //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
+                if(depth <= 6 && !see(move, -15*depth*depth)) {
+                    continue;
+                }
+            }
+
 
             // Copy the hash key to restore it after the search, together with unplay move
             uint64_t hash_key_copy = hash_key;
@@ -383,6 +487,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
             ply++;
+
+            if(is_quiet)
+                quietMoveCount++;
+
+
             // full depth search
             if (moveCount == 0)
                 evaluation = -search(depth - 1, -beta, -alpha, true);
@@ -392,7 +501,14 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 // condition to consider late move reduction (LMR)
                 if ((moveCount >= 4) && (depth >= 3) && is_ok_to_reduce)
                 {
-                    int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)]; //  (moveCount < 10) ? 1 : depth / 3;       // reduce the first 6 moves by 1, and the other moves (more unlikely than the previous ones) by depth / 3
+                    int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
+
+                    // R += !pv_node; // increase reduction if we it's not a pv-node
+                    // R += !improving; // increase reduction if we are not improving
+                    // R -= history_moves[!board.colorToMove][oldPieceType][getSquareTo(move)]/2000; // decrease reduction if the move has a high history score (it's more likely to cause a cutoff, so we want to search it deeper). NOTE: we use !board.colorToMove because it was changed inside playMove();
+
+                    R = std::min(depth - 2, std::max(1, R)); // make sure we don't end up in quiescence
+
                     evaluation = -search(depth - 1 - R, -alpha - 1, -alpha, true); // search move with a reduced search
                 }
 
@@ -438,10 +554,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 hash_f = HASH_FLAG_EXACT;
 
                 best_move = move;
-
-                // store history moves (only if it's a quiet move)
-                if (capturedPieceType == NOPIECE)
-                    history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)] += depth;
+                    
 
                 alpha = evaluation;
 
@@ -462,8 +575,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                     writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
                     // store killer moves (only if it's a quiet move)
-                    if (capturedPieceType == NOPIECE)
+                    if (!isCapture(move))
                     {
+                        //update history move score
+                        history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)] += depth*depth;
+                        //update killer moves
                         killer_moves[1][ply] = killer_moves[0][ply];
                         killer_moves[0][ply] = move;
                     }
@@ -484,7 +600,7 @@ static inline void print_move(MOVE move)
     printf("%s", coordFromPosition[getSquareFrom(move)]); // board.coordFromBitboardPosition((int)getSquareFrom(move)).c_str());
     printf("%s", coordFromPosition[getSquareTo(move)]);   // board.coordFromBitboardPosition((int)getSquareTo(move)).c_str());
     // promotion
-    if ((getNewPieceType(move)) != (int)board.allPieces[(getSquareFrom(move))] && (int)board.allPieces[(getSquareFrom(move))] == 5)
+    if (getNewPieceType(move) != P && board.allPieces[getSquareFrom(move)] == P)
     {
         if (getNewPieceType(move) == Q)
             printf("q");

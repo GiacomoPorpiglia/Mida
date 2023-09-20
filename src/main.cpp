@@ -27,6 +27,9 @@ void init_all() {
 
 //r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
 
+//8/kpp5/p4Q2/P1P5/KP5r/4R1p1/5q2/8 w - - 0 1
+
+
 int main() {
     init_all();
     board.loadFenPosition(startpos);

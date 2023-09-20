@@ -183,25 +183,9 @@ uint64_t random_uint64_t()
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }
 
-// get random few bits
-uint64_t random_fewbits()
-{
-    return random_uint64_t() & random_uint64_t() & random_uint64_t();
-}
 
-// get index of LS1B in bitboard
-static inline int get_ls1b_index(uint64_t bitboard)
-{
-    // make sure bitboard is not empty
-    if (bitboard)
-        // convert trailing zeros before LS1B to ones and count them
-        return count_bits((bitboard & -bitboard) - 1);
 
-    // otherwise
-    else
-        // return illegal index
-        return -1;
-}
+
 
 // set occupancies
 uint64_t set_occupancy(int index, int bits_in_mask, uint64_t attack_mask)

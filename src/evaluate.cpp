@@ -55,10 +55,6 @@ static inline void nnue_input(int *pieces, int *squares) {
     squares[idx] = 0;
 }
 
-
-NNUEdata nn;
-
-bool isNullBranch=false;
 NNUEdata nn_stack[max_ply+1];
 NNUEdata* stack[3];
 template<>
