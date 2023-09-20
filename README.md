@@ -81,6 +81,7 @@ For this project I used a lot of awesome resources:
 
 I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 
+Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
 # v1.1 updates
 The main updates in v1.1 are:
