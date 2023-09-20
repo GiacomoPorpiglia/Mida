@@ -29,7 +29,7 @@ This implementation is faster because bit-wise operations are very efficient. Yo
 
 ## Move generation
 Move genearation consists in <b>generating all the legal moves for a given side and a given position</b>. While this task may seem easy at first, I can assure you will find many obstacles along the way.
-To do this, I followed [this article](https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/") that I strongly recommend.
+To do this, I followed [this article](https://peterellisjones.com/posts/generating-legal-chess-moves-efficiently/) that I strongly recommend.
 <br/>
 
 ## Evaluation
