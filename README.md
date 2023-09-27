@@ -91,11 +91,6 @@ Thank you for supporting Mida developement and training through
 [![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-<img alt="" border="0" src="https://www.paypal.com/en_IT/i/scr/pixel.gif" width="1" height="1" />
-</form>
-
-
 # v1.1 updates
 The main updates in v1.1 are:
 
