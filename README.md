@@ -88,7 +88,7 @@ Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code 
 
 Thank you for supporting Mida developement and training through 
 
-[![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
+[![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal1.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
 # v1.1 updates
