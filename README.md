@@ -84,6 +84,13 @@ I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [R
 
 Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
+## Donations
+
+Thank you for supporting Mida developement and training through 
+
+[![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
+
+
 # v1.1 updates
 The main updates in v1.1 are:
 
