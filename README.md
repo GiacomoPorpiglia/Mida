@@ -15,11 +15,12 @@ Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for 
 
 ## Engine strength
 
-- v2.1:   Not tested on CCRL. Should be in the 2900 ELO range
-- v2.0:   Not tested on CCRL. Should be in the 2600 ELO range
-- v1.2.1: 2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
-- v1.1:   2331 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
-- v1.0:   2233 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+
+- v2.1: &nbsp;&nbsp;&nbsp;&nbsp; 2930 ELO on [CCRL 40/15](https://ccrl.chessdom.com/ccrl/4040/) 
+- v2.0: &nbsp;&nbsp;&nbsp;&nbsp;   ~2600 ELO (Not tested)
+- v1.2.1:&nbsp;&nbsp; 2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
+- v1.1: &nbsp;&nbsp;&nbsp;&nbsp; 2331 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/)
+- v1.0:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   2233 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
 
 
 
