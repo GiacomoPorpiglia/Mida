@@ -54,10 +54,6 @@ The search is based on Alpha-beta pruning algorithm, with various techniques (li
 * Late move reduction
 * Delta pruning
 
-To add:
-* "Improving cuts": I don't know if that's the proper name of the technique or if it even has a name. 
-Basically, the idea is to see if by going down a branch we are finding better positions (so, if we are improving), and if we are, we want to search that branch deeper. On the contrary, if we are not improving, chances are that's not going to be a good branch, and so we can prune and reduce it more aggressively.
-
 <br />
 
 ## How to use
@@ -117,3 +113,18 @@ This version has its main updates in the search function.
 - SEE (static exchange evaluation) for move ordering as well as pruning techniques
 - Fixed bug in history moves
 - Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.
+
+
+# v2.2 Updates
+- Changed History heuristic (now aligned with the implementation of all top engines). This improves the move ordering. Also, history score is now used in LMR to adjust the reduction.
+
+- "Improving cuts": We check if the evaluation has improved compared to the eval from the second last node, and if the score is lower, (meaning the branch is not improving), we can search it with more aggressive prunings (for now only in LMP) because it's probably not a good branch.
+
+- Increased reduction in Null Move Pruning: the reduction is now adjusted also based on the distance of the eval from beta. Also, null move pruning is now applied only if the eval is >= than beta.
+
+- Changes in LMR: the reduction factor (from now will be called R) is now not only the value from the LMR table, but is also adjusted based on the move. In particular:
+    - we reduce R by 2 if the move is a killer move.
+    - We reduce R by a factor history / 4000, where history is the history score for the move
+    - We increase R by 1 if the nod is a non-pv node
+    - We increase R by 1 if we are not improving
+    - We increase R by 1 if the move is quiet
