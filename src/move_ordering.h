@@ -16,6 +16,8 @@
 #define bestMoveScore 3000000
 #define pvMoveScore 2000000
 
+#define MAX_HISTORY 16384
+
 // most valuable victim - least valuable attacker table
 /*
 
@@ -49,6 +51,9 @@ extern MOVE pv_table[max_ply][max_ply];
 extern int follow_pv, score_pv; // if 1, we are following PV, if 0 we are not
 extern int count;
 void enable_pv_scoring(movesList *moveList);
+
+void updateKillers(MOVE newKillerMove);
+void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList, int quietMoveCount);
 
 // score moves
 /*

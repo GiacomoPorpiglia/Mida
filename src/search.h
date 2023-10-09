@@ -22,7 +22,7 @@ static inline int relative_square(int sq);
 static inline int quiescence(int alpha, int beta);
 
 extern int LMR_table[max_ply][64];
-extern int LMP_table[8];
+extern int LMP_table[2][8];
 extern int LMRBase;
 extern int LMRDivision;
 
@@ -30,7 +30,12 @@ typedef struct {
     int static_eval[max_ply];
 } SearchStack;
 
+typedef struct {
+    int searchDepth;
+} Thread;
+
 extern SearchStack ss;
+extern Thread td;
 
 // returns true if the position is  draw for unsufficient material
 static inline bool isInsufficientMaterial();

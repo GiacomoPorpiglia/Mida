@@ -58,9 +58,7 @@ public:
     int kingPos;
 
     void pretty_print_bb(uint64_t bb);
-    void calculateMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], movesList *moveList);
-    void calculateWhiteMoves(movesList *moveList);
-    void calculateBlackMoves(movesList *moveList);
+    void calculateMoves(int side_to_move, movesList *moveList);
     void calculateAttackedSquares(uint64_t opponentBitboards[6]);
     void reset();
     void loadFenPosition(string fen);
@@ -141,17 +139,6 @@ inline uint64_t Board::allAttackers(int sq, uint64_t occupancy)
 {
     return attackersForSide(WHITE, sq, occupancy) | attackersForSide(BLACK, sq, occupancy);
 }
-
-inline void Board::calculateWhiteMoves(movesList *moveList)
-{
-    calculateMoves(pieces_bb[WHITE], pieces_bb[BLACK], moveList);
-}
-
-inline void Board::calculateBlackMoves(movesList *moveList)
-{
-    calculateMoves(pieces_bb[BLACK], pieces_bb[WHITE], moveList);
-}
-
 
 inline uint64_t Board::whitePawnsAttacks(uint64_t pawn_bb)
 {

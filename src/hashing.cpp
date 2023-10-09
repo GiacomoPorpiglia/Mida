@@ -8,7 +8,7 @@
 
 
 uint64_t side_key = 0, hash_key = 0;
-tt transposition_table[HASH_TABLE_SIZE];
+tt transposition_table[HASH_TABLE_ENTRIES];
 uint64_t piece_keys[2][6][64];
 // random en passant keys
 uint64_t en_passant_keys[64];
@@ -17,7 +17,7 @@ uint64_t castle_keys[16];
 void clearTranspositionTable()
 {
     // loop over transposition table
-    for (int i = 0; i < HASH_TABLE_SIZE; i++)
+    for (int i = 0; i < HASH_TABLE_ENTRIES; i++)
     {
         // reset values
         transposition_table[i].hash_key = 0;
@@ -105,7 +105,7 @@ void init_random_keys()
 tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
 {
     // addressing the location of the entry we want to read
-    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_SIZE];
+    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_ENTRIES];
 
     // make sure we got the exact position that we need
     // we start by comparing the current hash key with the one stored in the address
@@ -126,7 +126,7 @@ tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
 void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
 {
     // address of the position in the transposition table we want to write in
-    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_SIZE];
+    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_ENTRIES];
 
     // adjust the evaluation in case of mates
     // store the score independent from pah from root to current node,

@@ -75,6 +75,35 @@ void enable_pv_scoring(movesList *moveList)
     }
 }
 
+
+void updateKillers(MOVE newKillerMove) {
+    killer_moves[1][ply] = killer_moves[0][ply];
+    killer_moves[0][ply] = newKillerMove;
+}
+
+void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList, int quietMoveCount) {
+
+    int bonus = std::min(2100, 300 * depth - 300);
+    
+
+    if (depth > 2)
+    {
+        int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)];
+        *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
+    }
+
+    for (int i = 0; i < quietMoveCount; i++)
+    {
+        MOVE quiet_move = quietList->moves[i];
+        if (quiet_move == best_move)
+            continue;
+        // penalize history of moves which didn't cause beta-cutoffs
+        int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(quiet_move)]][getSquareTo(quiet_move)];
+        *history += -bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
+    }
+}
+
+
 static inline int scoreMove(MOVE move)
 {
     // if PV move scoring is allowed

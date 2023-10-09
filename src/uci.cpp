@@ -187,10 +187,7 @@ static inline MOVE parse_move(char const *move_string)
 {
     movesList moveList;
     // create move list instance
-    if (board.colorToMove == 1)
-        board.calculateWhiteMoves(&moveList);
-    else
-        board.calculateBlackMoves(&moveList);
+    board.calculateMoves(board.colorToMove, &moveList);
 
     // parse source square
     int source_square = (move_string[0] - 'a') + (move_string[1] - '1') * 8;
@@ -449,7 +446,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 2.1\n");
+    printf("id name MIDA 2.2\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -494,7 +491,7 @@ void uci_loop()
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 2.1\n");
+            printf("id name MIDA 2.2\n");
             printf("id author Giacomo Porpiglia\n");
             printf("uciok\n");
         }

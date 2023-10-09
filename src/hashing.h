@@ -21,15 +21,16 @@ extern uint64_t hash_key;
 // Transposition table elements structure
 typedef struct
 {
-    MOVE best_move;    // best move
+    uint64_t hash_key; // hash key of the position
     int depth;         // current depth of the search
     int flag;          // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
     int value;         // evaluation of the position
-    uint64_t hash_key; // hash key of the position
+    MOVE best_move;    // best move
+    
 } tt;
 
 // transposition table
-extern tt transposition_table[HASH_TABLE_SIZE];
+extern tt transposition_table[HASH_TABLE_ENTRIES];
 
 // initialize / clear transposition table
 void clearTranspositionTable();

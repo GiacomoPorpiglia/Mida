@@ -16,7 +16,7 @@
 #define MATE_SCORE 48000
 #define MATE_VALUE 49000
 
-#define HASH_TABLE_SIZE 8000000 // 200 MB
+#define HASH_TABLE_ENTRIES 8000000 // each entry is 24 bytes
 #define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
 
 #define WHITE 1

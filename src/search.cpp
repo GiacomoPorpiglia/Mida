@@ -12,12 +12,35 @@
 #include <cmath>
 #include "see.h"
 
+// Rank Name                          Elo     +/-   Games   Score    Draw 
+//    1 Zandar (2900)                  98      72      80   63.7%   17.5% 
+//    2 v2.1 new                       70      71      80   60.0%   17.5% 
+//    3 MinkoChess_1.3_x64 (2960)    -179      82      80   26.3%   12.5% 
+
+// 120 of 600 games finished.
+
+// Rank Name                          Elo     +/-   Games   Score    Draw 
+//    1 v2.1                           39      70      80   55.6%   18.8% 
+//    2 Zandar (2900)                  26      68      80   53.8%   22.5% 
+//    3 MinkoChess_1.3_x64 (2960)     -66      74      80   40.6%   11.3% 
+
+// 120 of 600 games finished.
+
+// Rank Name                          Elo     +/-   Games   Score    Draw 
+//    1 v2.2                           72      72      78   60.3%   17.9% 
+//    2 Zandar (2900)                  26      68      80   53.8%   22.5% 
+//    3 MinkoChess_1.3_x64 (2960)     -98      72      80   36.3%   17.5% 
+
+// 120 of 600 games finished.
+
 int nodes = 0;
 
 movesList mGen[max_ply];
 
+Thread td;
+
 int LMR_table[max_ply][64];
-int LMP_table[8];
+int LMP_table[2][8];
 int LMRBase = 75;
 int LMRDivision = 300;
 
@@ -35,7 +58,8 @@ void init_search() {
     }
 
     for(int depth = 1; depth < 8; depth++) {
-        LMP_table[depth] = 4.0 + 4 * depth * depth / 4.5;
+        LMP_table[0][depth] = 2.5 + 2.5 * depth * depth / 4.5;
+        LMP_table[1][depth] = 4.0 + 4 * depth * depth / 4.5;
     }
 }
 
@@ -146,10 +170,8 @@ static inline int quiescence(int alpha, int beta)
         alpha = evaluation;
     }
     movesList *moveList = &mGen[ply];
-    if (board.colorToMove == 1)
-        board.calculateWhiteMoves(moveList);
-    else
-        board.calculateBlackMoves(moveList);
+
+    board.calculateMoves(board.colorToMove, moveList);
 
     // sort moves
     sortMoves(moveList, 0);
@@ -288,15 +310,19 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
         depth++;
 
     /*
-    if we have the static_eval from the tt entry, we can use it because it is more accurate than the evaluation of the position from the NN, because it comes from a search (even if at shallow depth). 
-    The reason why I still add it the NN eval and do a weighted avg is because I haven't found a way to make the NN work without evaluating every single position. 
+    if we have the static_eval from the tt entry, 
+    we can use it because it is more accurate 
+    than the evaluation of the position from the NN,
+    because it comes from a search (even if at shallow depth). 
+    The reason why I still add it the NN eval and do a weighted avg is 
+    because I haven't found a way to make the NN work without evaluating every single position. 
     So, I still have to evaluate the position even if I could use only the tt entry eval. :(
     */
     static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
 
     ss.static_eval[ply] = static_eval;
 
-    bool improving = ply >= 4 && !in_check && (ss.static_eval[ply] > (ss.static_eval[ply-2]+25)) && (ss.static_eval[ply-2] > (ss.static_eval[ply-4]+25));
+    bool improving = ply >= 2 && !in_check && (ss.static_eval[ply] > ss.static_eval[ply-2]);
 
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
@@ -304,11 +330,11 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     if(!pv_node && !in_check && !is_root) {
 
         //reverse futility pruning
-        if(depth < 9  && (static_eval - depth*80)>= beta)
+        if(depth < 9  && (static_eval - depth*80) >= beta)
             return static_eval;
 
         //null move pruning
-        if(doNull && nonPawnMat(board.colorToMove) && (depth >= 3) ) {
+        if(doNull && nonPawnMat(board.colorToMove) && (depth >= 3) && static_eval >= beta) {
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
 
@@ -320,11 +346,21 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             unsetEnPassantSquare(board.boardSpecs);
 
             ply++;
-            int R = 3 + depth / 3;
 
-            /* search moves with reduced depth to find beta cutoffs
-            depth - 1 - R where R is a reduction limit */
-            evaluation = -search(depth - 1 - R, -beta, -beta + 1, false);
+            /*
+            We increase the reduction with depth, and also
+            depending on how far we are from beta. If we are far from beta,
+            chances are we won't find a beta cutoff and so we can use a bigger
+            reduction factor.
+            */
+            int R = 4 + depth / 3 + std::min(3, (static_eval-beta) / 180);
+
+            R = std::min(depth, R);
+
+            /* 
+            search moves with reduced depth to find beta cutoffs
+            */
+            evaluation = -search(depth - R, -beta, -beta + 1, false);
 
             // restore board state
             ply--;
@@ -381,8 +417,13 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     }
 
 
-    //mate distance pruning
-    //if a mate has been found, this pruning helps to discard all branches that can't reach mate in less plies than the current mate found.
+    /*
+    mate distance pruning
+
+    if a mate has been found, this pruning helps to discard 
+    all branches that can't reach mate in less plies 
+    than the current mate found.
+    */
     int matingValue = MATE_VALUE - ply;
     if (matingValue < beta)
     {
@@ -395,10 +436,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
 
     // calculate moves
     if(!are_moves_calculated) {
-        if (board.colorToMove == WHITE)
-            board.calculateWhiteMoves(moveList);
-        else
-            board.calculateBlackMoves(moveList);
+        board.calculateMoves(board.colorToMove, moveList);
     }
     
 
@@ -427,19 +465,26 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
         MOVE move;
         int quietMoveCount=0;
         bool skip_quiet_moves = false;
+
+        movesList quietList;
+
         for (int moveCount = 0; moveCount < moveList->count; moveCount++)
         {
             pickNextMove(moveList, moveCount);
             move = moveList->moves[moveCount];
 
+            bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || (moveList->move_scores[moveCount] == secondKillerScore);
 
             int oldPieceType = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
             uint16_t oldSpecs = board.boardSpecs;
             
-            bool is_ok_to_reduce = !in_check && !isCapture(move) && !isPromotion(move) && !isEnPassant(move);
+            bool is_ok_to_reduce = !in_check && !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
 
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
+
+            //history score of the move
+            int history = history_moves[board.colorToMove][oldPieceType][getSquareTo(move)];
 
             if (is_quiet && skip_quiet_moves) 
             {
@@ -448,18 +493,26 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
 
             if (!is_root && !in_check && is_quiet) {
                 
-                /*late move pruning
-                if the move is quiet and we have already searched enough moves before, we can skip it.
+                /*
+                Late move pruning (LMP)
+
+                if the move is quiet and we have already searched 
+                enough moves before, we can skip it.
                 */
-                if (!pv_node && depth <= 7 && quietMoveCount >= LMP_table[depth])
+                if (!pv_node && depth <= 7 && quietMoveCount >= LMP_table[improving][depth])
                 {
                     skip_quiet_moves = true;
                     continue;
                 }
 
                 int LMRdepth = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
+
+
                 /*
-                Futility pruning; if the move is quiet and the position has low potential of raising alpha, we can skip all following quiet moves
+                Futility pruning
+                
+                if the move is quiet and the position has low potential 
+                of raising alpha, we can skip all following quiet moves
                 */
                 if (LMRdepth <= 6 && (static_eval + 215 + 70*depth) <= alpha) {
                     skip_quiet_moves=true;
@@ -488,14 +541,17 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             repetition_table[repetition_index] = hash_key;
             ply++;
 
-            if(is_quiet)
+            if(is_quiet) {
+                quietList.moves[quietMoveCount] = move;
                 quietMoveCount++;
+            }
 
 
             // full depth search
             if (moveCount == 0)
                 evaluation = -search(depth - 1, -beta, -alpha, true);
-            // LMR (late move reduction)
+
+            // Late move reduction (LMR)
             else
             {
                 // condition to consider late move reduction (LMR)
@@ -503,13 +559,22 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                 {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
-                    // R += !pv_node; // increase reduction if we it's not a pv-node
-                    // R += !improving; // increase reduction if we are not improving
-                    // R -= history_moves[!board.colorToMove][oldPieceType][getSquareTo(move)]/2000; // decrease reduction if the move has a high history score (it's more likely to cause a cutoff, so we want to search it deeper). NOTE: we use !board.colorToMove because it was changed inside playMove();
+                    R += !pv_node; // increase reduction if we it's not a pv-node
+                    R += !improving; // increase reduction if we are not improving
+                    R += is_quiet && !see(move, -50 * depth);   // we increase the reduction if the move is quiet, because they are less likely to be the best move
 
-                    R = std::min(depth - 2, std::max(1, R)); // make sure we don't end up in quiescence
+                    /*
+                    decrease reduction if the move has a high history score
+                    (it's more likely to cause a cutoff, so we want to search it deeper)
+                    */
+                    R -= history / 4000; 
 
-                    evaluation = -search(depth - 1 - R, -alpha - 1, -alpha, true); // search move with a reduced search
+                    R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
+
+                    
+                    R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
+
+                    evaluation = -search(depth - R, -alpha - 1, -alpha, true); // search move with a reduced search
                 }
 
                 else
@@ -575,13 +640,12 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                     writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
                     // store killer moves (only if it's a quiet move)
-                    if (!isCapture(move))
+                    if (is_quiet)
                     {
-                        //update history move score
-                        history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)] += depth*depth;
-                        //update killer moves
-                        killer_moves[1][ply] = killer_moves[0][ply];
-                        killer_moves[0][ply] = move;
+                        // update killer moves
+                        updateKillers(move);
+                        //update history score
+                        updateHistoryScore(move, best_move, depth, &quietList, quietMoveCount);
                     }
                     return evaluation;
                 }
@@ -634,11 +698,12 @@ void search_position(int maxDepth)
     int alpha = -inf;
     int beta = inf;
 
-    int delta = 50;
+    int delta = 25;
 
     // iterative deepening
     for (int curr_depth = 1; curr_depth <= maxDepth; curr_depth++)
     {
+        td.searchDepth = curr_depth;
         ply = 0;
         for(int i = 0; i < 65; i++) {
             nn_stack[i].accumulator.computedAccumulation=0;
@@ -676,7 +741,7 @@ void search_position(int maxDepth)
             continue;
         }
 
-        delta = 50;
+        delta = 25;
         
 
         // if ((evaluation <= alpha) || (evaluation >= beta))
