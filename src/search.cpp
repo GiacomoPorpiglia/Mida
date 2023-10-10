@@ -12,12 +12,12 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 vs v2.1: 69 - 34 - 51 [0.614]
-// ...      v2.2 playing White: 37 - 17 - 24  [0.628] 78
-// ...      v2.2 playing Black: 32 - 17 - 27  [0.599] 76
-// ...      White vs Black: 54 - 49 - 51  [0.516] 154
-// Elo difference: 80.4 +/- 45.7, LOS: 100.0 %, DrawRatio: 33.1 %
-// 157 of 200 games finished.
+// Score of v2.2 vs v2.1: 57 - 24 - 59 [0.618]
+// ...      v2.2 playing White: 35 - 10 - 26  [0.676] 71
+// ...      v2.2 playing Black: 22 - 14 - 33  [0.558] 69
+// ...      White vs Black: 49 - 32 - 59  [0.561] 140
+// Elo difference: 83.5 +/- 44.3, LOS: 100.0 %, DrawRatio: 42.1 %
+// 140 of 200 games finished.
 
 int nodes = 0;
 
@@ -265,10 +265,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
     if (ttEntry!=nullptr && ply && !pv_node) {
         static_eval = ttEntry->value;
-        if(ttEntry->depth>=depth && 
-           (ttEntry->flag==HASH_FLAG_EXACT || 
-          (ttEntry->flag==HASH_FLAG_ALPHA && ttEntry->value<=alpha) || 
-          (ttEntry->flag==HASH_FLAG_BETA && ttEntry->value >= beta)))
+        if(ttEntry->depth >= depth && 
+          (ttEntry->flag  == HASH_FLAG_EXACT || 
+          (ttEntry->flag  == HASH_FLAG_ALPHA && ttEntry->value <= alpha) || 
+          (ttEntry->flag  == HASH_FLAG_BETA  && ttEntry->value >= beta)))
             return static_eval;
     }
 
