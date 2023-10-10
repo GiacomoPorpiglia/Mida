@@ -6,6 +6,7 @@
 
 
 #define ILLEGAL_MOVE 0
+#define NULL_MOVE 0
 // transposition table hash flags
 #define HASH_FLAG_EXACT 0
 #define HASH_FLAG_ALPHA 1

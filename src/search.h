@@ -27,14 +27,15 @@ extern int LMRBase;
 extern int LMRDivision;
 
 typedef struct {
-    int static_eval[max_ply];
+    int static_eval;
+    MOVE move;
 } SearchStack;
 
 typedef struct {
     int searchDepth;
 } Thread;
 
-extern SearchStack ss;
+extern SearchStack searchStack[max_ply + 1];
 extern Thread td;
 
 // returns true if the position is  draw for unsufficient material
@@ -42,7 +43,7 @@ static inline bool isInsufficientMaterial();
 static inline uint64_t nonPawnMat(int side);
 
 // negamax alpha beta search
-static inline int search(int depth, int alpha, int beta, bool doNull);
+static inline int search(int depth, int alpha, int beta, SearchStack *ss);
 
 static inline void print_move(MOVE move);
 

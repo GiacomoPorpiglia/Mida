@@ -12,26 +12,12 @@
 #include <cmath>
 #include "see.h"
 
-// Rank Name                          Elo     +/-   Games   Score    Draw 
-//    1 Zandar (2900)                  98      72      80   63.7%   17.5% 
-//    2 v2.1 new                       70      71      80   60.0%   17.5% 
-//    3 MinkoChess_1.3_x64 (2960)    -179      82      80   26.3%   12.5% 
-
-// 120 of 600 games finished.
-
-// Rank Name                          Elo     +/-   Games   Score    Draw 
-//    1 v2.1                           39      70      80   55.6%   18.8% 
-//    2 Zandar (2900)                  26      68      80   53.8%   22.5% 
-//    3 MinkoChess_1.3_x64 (2960)     -66      74      80   40.6%   11.3% 
-
-// 120 of 600 games finished.
-
-// Rank Name                          Elo     +/-   Games   Score    Draw 
-//    1 v2.2                           72      72      78   60.3%   17.9% 
-//    2 Zandar (2900)                  26      68      80   53.8%   22.5% 
-//    3 MinkoChess_1.3_x64 (2960)     -98      72      80   36.3%   17.5% 
-
-// 120 of 600 games finished.
+// Score of v2.2 vs v2.1: 69 - 34 - 51 [0.614]
+// ...      v2.2 playing White: 37 - 17 - 24  [0.628] 78
+// ...      v2.2 playing Black: 32 - 17 - 27  [0.599] 76
+// ...      White vs Black: 54 - 49 - 51  [0.516] 154
+// Elo difference: 80.4 +/- 45.7, LOS: 100.0 %, DrawRatio: 33.1 %
+// 157 of 200 games finished.
 
 int nodes = 0;
 
@@ -44,7 +30,7 @@ int LMP_table[2][8];
 int LMRBase = 75;
 int LMRDivision = 300;
 
-SearchStack ss;
+SearchStack searchStack[max_ply+1];
 
 
 void init_search() {
@@ -255,7 +241,7 @@ static inline uint64_t nonPawnMat(int side)
 }
 
 
-static inline int search(int depth, int alpha, int beta, bool doNull)
+static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 {
 
     int evaluation, static_eval=0;
@@ -320,9 +306,9 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
     */
     static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
 
-    ss.static_eval[ply] = static_eval;
+    ss->static_eval = static_eval;
 
-    bool improving = ply >= 2 && !in_check && (ss.static_eval[ply] > ss.static_eval[ply-2]);
+    bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss-2)->static_eval);
 
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
@@ -334,7 +320,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             return static_eval;
 
         //null move pruning
-        if(doNull && nonPawnMat(board.colorToMove) && (depth >= 3) && static_eval >= beta) {
+        if((ss-1)->move != NULL_MOVE && nonPawnMat(board.colorToMove) && (depth >= 3) && static_eval >= beta) {
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
 
@@ -344,6 +330,8 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             makeNullMove();
             uint16_t copySpecs = board.boardSpecs;
             unsetEnPassantSquare(board.boardSpecs);
+
+            ss->move = NULL_MOVE;
 
             ply++;
 
@@ -360,7 +348,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             /* 
             search moves with reduced depth to find beta cutoffs
             */
-            evaluation = -search(depth - R, -beta, -beta + 1, false);
+            evaluation = -search(depth - R, -beta, -beta + 1, ss + 1);
 
             // restore board state
             ply--;
@@ -540,6 +528,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
             ply++;
+            ss->move = move;
 
             if(is_quiet) {
                 quietList.moves[quietMoveCount] = move;
@@ -549,7 +538,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
 
             // full depth search
             if (moveCount == 0)
-                evaluation = -search(depth - 1, -beta, -alpha, true);
+                evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
 
             // Late move reduction (LMR)
             else
@@ -574,7 +563,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                     
                     R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
-                    evaluation = -search(depth - R, -alpha - 1, -alpha, true); // search move with a reduced search
+                    evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
                 }
 
                 else
@@ -590,7 +579,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                         the rest of the moves are searched with the goal of proving that they are all bad.
                         It's possible to do this a bit faster than a search that worries that one
                         of the remaining moves might be good. */
-                    evaluation = -search(depth - 1, -alpha - 1, -alpha, true);
+                    evaluation = -search(depth - 1, -alpha - 1, -alpha, ss + 1);
                     /*  If the algorithm finds out that it was wrong, and that one of the
                         subsequent moves was better than the first PV move, it has to search again,
                         in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
@@ -598,7 +587,7 @@ static inline int search(int depth, int alpha, int beta, bool doNull)
                         "bad move proof" search referred to earlier. */
                     if ((evaluation > alpha) && (evaluation < beta))
                         // research the move  that has failed to be proved to be bad
-                        evaluation = -search(depth - 1, -beta, -alpha, true);
+                        evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
                 }
             }
 
@@ -726,7 +715,7 @@ void search_position(int maxDepth)
         }
 
         // search at the current depth
-        evaluation = search(curr_depth, alpha, beta, true);
+        evaluation = search(curr_depth, alpha, beta, searchStack);
         //we fell outside the aspiration window, so try again with a full-width window (and the same depth)
         if(evaluation <= alpha) {
             alpha = evaluation-delta;
