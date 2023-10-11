@@ -18,8 +18,7 @@ static inline bool repetition_detection();
 static inline void fillDirtyPieceNull(int d);
 static inline void fillDirtyPiece(int d, MOVE move);
 static inline int relative_square(int sq);
-// quiescence search
-static inline int quiescence(int alpha, int beta);
+
 
 extern int LMR_table[max_ply][64];
 extern int LMP_table[2][8];
@@ -42,6 +41,8 @@ extern Thread td;
 static inline bool isInsufficientMaterial();
 static inline uint64_t nonPawnMat(int side);
 
+// quiescence search
+static inline int quiescence(int alpha, int beta, SearchStack *ss);
 // negamax alpha beta search
 static inline int search(int depth, int alpha, int beta, SearchStack *ss);
 

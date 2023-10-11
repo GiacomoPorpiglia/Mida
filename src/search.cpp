@@ -128,7 +128,7 @@ static inline bool repetition_detection()
     return false;
 }
 
-static inline int quiescence(int alpha, int beta)
+static inline int quiescence(int alpha, int beta, SearchStack *ss)
 {
     // every 2047 nodes
     if ((nodes & 2047) == 0)
@@ -145,6 +145,8 @@ static inline int quiescence(int alpha, int beta)
         return evaluate<false>();
 
     int evaluation = evaluate<true>();
+
+    ss->static_eval = evaluation;
     
     //Delta pruning
     if(evaluation < alpha-pieceValues[Q]) return alpha;
@@ -193,11 +195,12 @@ static inline int quiescence(int alpha, int beta)
             playedCount++;
             playMove(move);
             ply++;
+            ss->move = move;
             // increment repetition index & store hash key
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
 
-            evaluation = -quiescence(-beta, -alpha);
+            evaluation = -quiescence(-beta, -alpha, ss + 1);
 
             ply--;
             // decrement repetition index
@@ -282,7 +285,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
     if (depth <= 0)
         // run quiescence search
-        return quiescence(alpha, beta);
+        return quiescence(alpha, beta, ss + 1);
 
     // if we went too deep, there is overflow in killer moves, history moves and PV.
     if (ply > max_ply - 1)
@@ -382,7 +385,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 if (depth == 1)
                 {
                     // get quiscence score
-                    new_eval = quiescence(alpha, beta);
+                    new_eval = quiescence(alpha, beta, ss + 1);
                     // return quiescence score if it's greater then static evaluation score
 
                     return (new_eval > evaluation) ? new_eval : evaluation;
@@ -393,7 +396,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 if ((evaluation < beta) && (depth <= 2))
                 {
                     // get quiscence score
-                    new_eval = quiescence(alpha, beta);
+                    new_eval = quiescence(alpha, beta, ss + 1);
 
                     // quiescence score indicates fail-low node
                     if (new_eval < beta)
@@ -749,8 +752,7 @@ void search_position(int maxDepth)
         // if PV is available
         if (pv_length[0])
         {
-            int nps = (float)(nodes*1000)/(get_time_ms() - starttime);
-            nps = nps > 0 ? nps : 0;
+            int nps = static_cast<int>(1000.0f * nodes / (get_time_ms() - starttime));
             // print search info
             if (evaluation > -MATE_VALUE && evaluation < -MATE_SCORE)
                 printf("info score mate %d depth %d nodes %d nps %d time %d pv ", -(evaluation + MATE_VALUE) / 2 - 1, curr_depth, nodes, nps, get_time_ms() - starttime);
