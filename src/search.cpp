@@ -12,11 +12,11 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 vs v2.1: 57 - 24 - 59 [0.618]
-// ...      v2.2 playing White: 35 - 10 - 26  [0.676] 71
-// ...      v2.2 playing Black: 22 - 14 - 33  [0.558] 69
-// ...      White vs Black: 49 - 32 - 59  [0.561] 140
-// Elo difference: 83.5 +/- 44.3, LOS: 100.0 %, DrawRatio: 42.1 %
+// Score of v2.2 tt vs v2.1: 59 - 27 - 54 [0.614]
+// ...      v2.2 tt playing White: 32 - 14 - 24  [0.629] 70
+// ...      v2.2 tt playing Black: 27 - 13 - 30  [0.600] 70
+// ...      White vs Black: 45 - 41 - 54  [0.514] 140
+// Elo difference: 80.8 +/- 45.8, LOS: 100.0 %, DrawRatio: 38.6 %
 // 140 of 200 games finished.
 
 int nodes = 0;

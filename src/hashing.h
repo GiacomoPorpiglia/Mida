@@ -7,6 +7,9 @@
 
 //--------------ZOBRIST HASHING---------------------
 
+extern int hash_table_size;
+extern int hash_table_entries;
+
 // random piece keys
 extern uint64_t piece_keys[2][6][64];
 // random en passant keys
@@ -30,7 +33,8 @@ typedef struct
 } tt;
 
 // transposition table
-extern tt transposition_table[HASH_TABLE_ENTRIES];
+extern tt* transposition_table;
+void init_hash_table(int num_entries);
 
 // initialize / clear transposition table
 void clearTranspositionTable();

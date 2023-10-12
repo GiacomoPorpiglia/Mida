@@ -128,3 +128,5 @@ This version has its main updates in the search function.
     - We increase R by 1 if the nod is a non-pv node
     - We increase R by 1 if we are not improving
     - We increase R by 1 if the move is quiet
+
+- Hash table size set to a default value of 64 MB (still have to make it customizable)
