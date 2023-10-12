@@ -13,12 +13,12 @@
 void init_all() {
 
     nnue_export_net();
-
+    init_hash_table(hash_table_entries);
+    clearTranspositionTable();
     init_random_keys();
     init_sliders_attacks(bishop);
     init_sliders_attacks(rook);
     init_search();
-    clearTranspositionTable();
 }
 
 //r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 

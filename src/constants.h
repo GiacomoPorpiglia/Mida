@@ -6,6 +6,7 @@
 
 
 #define ILLEGAL_MOVE 0
+#define NULL_MOVE 0
 // transposition table hash flags
 #define HASH_FLAG_EXACT 0
 #define HASH_FLAG_ALPHA 1
@@ -16,7 +17,7 @@
 #define MATE_SCORE 48000
 #define MATE_VALUE 49000
 
-#define HASH_TABLE_ENTRIES 8000000 // each entry is 24 bytes
+// #define HASH_TABLE_ENTRIES 8000000 // each entry is 24 bytes
 #define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
 
 #define WHITE 1

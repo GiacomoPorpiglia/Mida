@@ -5,28 +5,31 @@
 #include "magic_bitboards.h"
 #include "board_declaration.h"
 #include "bitboard.h"
+#include <iostream>
 
+int hash_table_size = 64; //MB (64 MB default)
+int hash_table_entries = hash_table_size*1024*1024/sizeof(tt); // 2796202 = 64MB
+
+tt* transposition_table;
+
+void init_hash_table(int num_entries) {
+    int bytes = num_entries*sizeof(tt);
+    transposition_table = (tt*)malloc(bytes);
+
+    std::cout << "Hash table Initialized with size " << hash_table_size << "MB\n\n";
+}
+
+// initialize / clear transposition table
+void clearTranspositionTable()
+{
+    memset(transposition_table, 0, hash_table_entries * sizeof(tt));
+}
 
 uint64_t side_key = 0, hash_key = 0;
-tt transposition_table[HASH_TABLE_ENTRIES];
 uint64_t piece_keys[2][6][64];
 // random en passant keys
 uint64_t en_passant_keys[64];
 uint64_t castle_keys[16];
-// initialize / clear transposition table
-void clearTranspositionTable()
-{
-    // loop over transposition table
-    for (int i = 0; i < HASH_TABLE_ENTRIES; i++)
-    {
-        // reset values
-        transposition_table[i].hash_key = 0;
-        transposition_table[i].depth = 0;
-        transposition_table[i].flag = 0;
-        transposition_table[i].value = 0;
-        transposition_table[i].best_move = 0;
-    }
-}
 
 // generate the castle key index for Zobrist hashing based on castling rights
 int generate_castle_key_index()
@@ -89,23 +92,21 @@ void init_random_keys()
         }
     }
     for (int square = 0; square < 64; square++)
-    {
         en_passant_keys[square] = random_uint64_t();
-    }
+    
 
     side_key = random_uint64_t();
 
     for (int castle = 0; castle < 16; castle++)
-    {
         castle_keys[castle] = random_uint64_t();
-    }
+    
 }
 
 // read entry from the transposition table
 tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
 {
     // addressing the location of the entry we want to read
-    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_ENTRIES];
+    tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
 
     // make sure we got the exact position that we need
     // we start by comparing the current hash key with the one stored in the address
@@ -126,7 +127,7 @@ tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
 void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
 {
     // address of the position in the transposition table we want to write in
-    tt *hash_entry = &transposition_table[hash_key % HASH_TABLE_ENTRIES];
+    tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
 
     // adjust the evaluation in case of mates
     // store the score independent from pah from root to current node,
