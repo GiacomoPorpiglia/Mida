@@ -61,7 +61,7 @@ static inline void fillDirtyPieceNull(int ply) {
     dp->pc[0]=0;
 }
 
-// populate the dirty piece for current ply (from CFish)
+// populate the dirty piece for current ply (from CFish NNUe implementation)
 static inline void fillDirtyPiece(int ply, MOVE move) {
     int rfrom, rto;
     int from = getSquareFrom(move);
@@ -265,6 +265,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     bool pv_node = (beta - alpha) > 1;
     bool is_root = (ply==0);
     // read hash entry
+
     tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
     if (ttEntry!=nullptr && ply && !pv_node) {
         static_eval = ttEntry->value;
@@ -430,9 +431,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
         board.calculateMoves(board.colorToMove, moveList);
     }
     
-
-
-
+    //if no moves are availble, it's either checkmate or stalemate
     if (moveList->count == 0)
     {
         if (in_check)
@@ -474,9 +473,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
 
-            //history score of the move
+            //get history score of the move
             int history = history_moves[board.colorToMove][oldPieceType][getSquareTo(move)];
 
+            //skip quiet moves
             if (is_quiet && skip_quiet_moves) 
             {
                 continue;
@@ -517,6 +517,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             //if not quiet move
             else {
                 //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
+                //Slso, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
                 if(depth <= 6 && !see(move, -15*depth*depth)) {
                     continue;
                 }
@@ -618,7 +619,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 // write PV move
                 pv_table[ply][ply] = move;
 
-                // loop over next ply
+                // loop over next ply's pv_table
                 for (int next_ply = ply + 1; next_ply < pv_length[ply + 1]; next_ply++)
                     // copy move from deeper ply into current ply
                     pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
