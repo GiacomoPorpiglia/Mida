@@ -13,7 +13,7 @@
 void init_all() {
 
     nnue_export_net();
-    init_hash_table(hash_table_entries);
+    init_hash_table();
     clearTranspositionTable();
     init_random_keys();
     init_sliders_attacks(bishop);

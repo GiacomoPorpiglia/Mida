@@ -8,15 +8,18 @@
 #include <iostream>
 
 int hash_table_size = 64; //MB (64 MB default)
-int hash_table_entries = hash_table_size*1024*1024/sizeof(tt); // 2796202 = 64MB
+int hash_table_entries;// = hash_table_size*1024*1024/sizeof(tt); // 2796202 = 64MB
 
 tt* transposition_table;
 
-void init_hash_table(int num_entries) {
-    int bytes = num_entries*sizeof(tt);
+void init_hash_table() {
+    hash_table_entries = hash_table_size*1024*1024/sizeof(tt);
+    int bytes = hash_table_entries*sizeof(tt);
     transposition_table = (tt*)malloc(bytes);
 
-    std::cout << "Hash table Initialized with size " << hash_table_size << "MB\n\n";
+    std::cout << "Hash table Initialized with size " << hash_table_size << " MB\n\n";
+
+    clearTranspositionTable();
 }
 
 // initialize / clear transposition table

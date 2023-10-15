@@ -20,6 +20,8 @@
 // #define HASH_TABLE_ENTRIES 8000000 // each entry is 24 bytes
 #define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
 
+#define MAX_HASH 1024 // 1024 MB max hash table size
+
 #define WHITE 1
 #define BLACK 0
 

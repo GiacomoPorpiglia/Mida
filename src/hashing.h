@@ -34,7 +34,7 @@ typedef struct
 
 // transposition table
 extern tt* transposition_table;
-void init_hash_table(int num_entries);
+void init_hash_table();
 
 // initialize / clear transposition table
 void clearTranspositionTable();
