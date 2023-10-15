@@ -12,12 +12,12 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 tt vs v2.1: 59 - 27 - 54 [0.614]
-// ...      v2.2 tt playing White: 32 - 14 - 24  [0.629] 70
-// ...      v2.2 tt playing Black: 27 - 13 - 30  [0.600] 70
-// ...      White vs Black: 45 - 41 - 54  [0.514] 140
-// Elo difference: 80.8 +/- 45.8, LOS: 100.0 %, DrawRatio: 38.6 %
-// 140 of 200 games finished.
+// Score of v2.2 vs v2.1: 90 - 28 - 82 [0.655]
+// ...      mida_engine-nm playing White: 55 - 11 - 34  [0.720] 100
+// ...      mida_engine-nm playing Black: 35 - 17 - 48  [0.590] 100
+// ...      White vs Black: 72 - 46 - 82  [0.565] 200
+// Elo difference: 111.4 +/- 37.6, LOS: 100.0 %, DrawRatio: 41.0 %
+// 200 of 200 games finished.
 
 int nodes = 0;
 
@@ -344,7 +344,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             chances are we won't find a beta cutoff and so we can use a bigger
             reduction factor.
             */
-            int R = 4 + depth / 3 + std::min(3, (static_eval-beta) / 180);
+            int R = 3 + depth / 3 + std::min(3, (static_eval-beta) / 180);
 
             R = std::min(depth, R);
 
@@ -753,6 +753,7 @@ void search_position(int maxDepth)
         if (pv_length[0])
         {
             int nps = static_cast<int>(1000.0f * nodes / (get_time_ms() - starttime));
+            nps = nps < 0 ? 0 : nps;
             // print search info
             if (evaluation > -MATE_VALUE && evaluation < -MATE_SCORE)
                 printf("info score mate %d depth %d nodes %d nps %d time %d pv ", -(evaluation + MATE_VALUE) / 2 - 1, curr_depth, nodes, nps, get_time_ms() - starttime);

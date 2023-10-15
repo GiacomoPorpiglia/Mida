@@ -88,33 +88,6 @@ Thank you for supporting Mida developement and training through
 [![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal1.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
-# v1.1 updates
-The main updates in v1.1 are:
-
-* 10% increment in computed nodes per second.
-* New evaluation function (not in its parameters, but much more readable and easily changable).
-* Space evaluation and king on open flank.
-
-# v1.2 Updates
-This version has its main updates in the search function.
-- Reverse futility pruning.
-- More aggressive null move pruning.
-
-# v2.0 Updates
-- Introducing NNUE evaluation
-- Delta pruning
-- Fixed bug in null move pruning
-
-
-# v2.1 Updates
-- Mate distance pruning
-- Late move pruning
-- Futility pruning
-- SEE (static exchange evaluation) for move ordering as well as pruning techniques
-- Fixed bug in history moves
-- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.
-
-
 # v2.2 Updates
 - Changed History heuristic (now aligned with the implementation of all top engines). This improves the move ordering. Also, history score is now used in LMR to adjust the reduction.
 
@@ -130,3 +103,29 @@ This version has its main updates in the search function.
     - We increase R by 1 if the move is quiet
 
 - Hash table size set to a default value of 64 MB (still have to make it customizable)
+
+# v2.1 Updates
+- Mate distance pruning
+- Late move pruning
+- Futility pruning
+- SEE (static exchange evaluation) for move ordering as well as pruning techniques
+- Fixed bug in history moves
+- Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.
+
+# v2.0 Updates
+- Introducing NNUE evaluation
+- Delta pruning
+- Fixed bug in null move pruning
+
+# v1.2 Updates
+This version has its main updates in the search function.
+- Reverse futility pruning.
+- More aggressive null move pruning.
+
+# v1.1 updates
+The main updates in v1.1 are:
+
+* 10% increment in computed nodes per second.
+* New evaluation function (not in its parameters, but much more readable and easily changable).
+* Space evaluation and king on open flank.
+
