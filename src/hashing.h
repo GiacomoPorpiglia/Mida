@@ -24,11 +24,12 @@ extern uint64_t hash_key;
 // Transposition table elements structure
 typedef struct
 {
-    uint64_t hash_key; // hash key of the position
-    int depth;         // current depth of the search
-    int flag;          // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
-    int value;         // evaluation of the position
-    MOVE best_move;    // best move
+    uint64_t hash_key;     // hash key of the position
+    uint8_t depth;         // current depth of the search
+    uint8_t flag : 2;      // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
+    uint8_t age : 6;       // store the age at which entry was written
+    int16_t value;         // evaluation of the position
+    MOVE best_move;       // best move
     
 } tt;
 

@@ -5,6 +5,8 @@ const int pieceValues[6] = {0, 1120, 605, 410, 400, 100};
 
 uint64_t pieces_bb[2][7];
 
+int currentAge = 0;
+
 // const int K = 0;
 // const int Q = 1;
 // const int R = 2;

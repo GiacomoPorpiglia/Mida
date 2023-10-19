@@ -12,12 +12,6 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 vs v2.1: 90 - 28 - 82 [0.655]
-// ...      mida_engine-nm playing White: 55 - 11 - 34  [0.720] 100
-// ...      mida_engine-nm playing Black: 35 - 17 - 48  [0.590] 100
-// ...      White vs Black: 72 - 46 - 82  [0.565] 200
-// Elo difference: 111.4 +/- 37.6, LOS: 100.0 %, DrawRatio: 41.0 %
-// 200 of 200 games finished.
 
 int nodes = 0;
 
@@ -687,6 +681,8 @@ void search_position(int maxDepth)
     memset(history_moves, 0, sizeof(history_moves));
     memset(pv_table, 0, sizeof(pv_table));
     memset(pv_length, 0, sizeof(pv_length));
+    currentAge++;
+    //clearTranspositionTable();
 
     int alpha = -inf;
     int beta = inf;

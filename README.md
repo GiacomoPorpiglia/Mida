@@ -76,10 +76,9 @@ For this project I used a lot of awesome resources:
 - [Chess programming Wiki](https://www.chessprogramming.org/Main_Page)
 - [Chess programming Youtube Series by Maksim Korzh](https://www.youtube.com/watch?v=QUNP-UjujBM&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
 - [dshawul](https://github.com/dshawul) and his [NNUE-probe library](https://github.com/dshawul/nnue-probe)
+- [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 
-I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
-
-Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
+Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
 ## Donations
 
@@ -103,6 +102,7 @@ Thank you for supporting Mida developement and training through
     - We increase R by 1 if the move is quiet
 
 - Hash table size set to a default value of 64 MB (still have to make it customizable)
+- Optimizations in tt entry's size (previouslt 24 bytes, now 16) and added Aging as overwriting condition.
 
 # v2.1 Updates
 - Mate distance pruning

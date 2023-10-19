@@ -16,6 +16,7 @@ void init_hash_table() {
     hash_table_entries = hash_table_size*1024*1024/sizeof(tt);
     int bytes = hash_table_entries*sizeof(tt);
     transposition_table = (tt*)malloc(bytes);
+    currentAge = 0;
 
     std::cout << "Hash table Initialized with size " << hash_table_size << " MB\n\n";
 
@@ -25,6 +26,7 @@ void init_hash_table() {
 // initialize / clear transposition table
 void clearTranspositionTable()
 {
+    currentAge = 0;
     memset(transposition_table, 0, hash_table_entries * sizeof(tt));
 }
 
@@ -132,6 +134,10 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
     // address of the position in the transposition table we want to write in
     tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
 
+    bool replace = !hash_entry->hash_key || (hash_entry->age != currentAge || hash_entry->depth <= depth);
+
+    if(!replace) return;
+
     // adjust the evaluation in case of mates
     // store the score independent from pah from root to current node,
     if (evaluation < -MATE_SCORE)
@@ -144,4 +150,5 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
     hash_entry->flag = hash_flag;
     hash_entry->hash_key = hash_key;
     hash_entry->best_move = best_move;
+    hash_entry->age = currentAge;
 }

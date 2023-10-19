@@ -470,7 +470,6 @@ void uci_loop()
         else if (strncmp(input, "position", 8) == 0)
         {
             parse_position(input);
-            clearTranspositionTable();
         }
 
         else if (strncmp(input, "ucinewgame", 10) == 0)

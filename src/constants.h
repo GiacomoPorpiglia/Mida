@@ -129,4 +129,7 @@ extern const uint64_t kingFlank[8];
 
 extern const uint64_t center;
 
+
+extern int currentAge;
+
 #endif
