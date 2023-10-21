@@ -12,6 +12,12 @@
 #include <cmath>
 #include "see.h"
 
+// Score of v2.2 vs v2.1: 118 - 16 - 66 [0.755]
+// ...      v2.2 playing White: 70 - 8 - 23  [0.807] 101
+// ...      v2.2 playing Black: 48 - 8 - 43  [0.702] 99
+// ...      White vs Black: 78 - 56 - 66  [0.555] 200
+// Elo difference: 195.5 +/- 42.0, LOS: 100.0 %, DrawRatio: 33.0 %
+// 200 of 200 games finished.
 
 int nodes = 0;
 
@@ -55,7 +61,7 @@ static inline void fillDirtyPieceNull(int ply) {
     dp->pc[0]=0;
 }
 
-// populate the dirty piece for current ply (from CFish NNUe implementation)
+// populate the dirty piece for current ply (from CFish NNUE implementation)
 static inline void fillDirtyPiece(int ply, MOVE move) {
     int rfrom, rto;
     int from = getSquareFrom(move);
@@ -134,7 +140,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     if (fiftyMoveRuleTable[plyGameCounter] == 100)
         return 0;
 
-    // if we went too deep, there is overflow in killer moves, history moves and PV.
+    // if we went too deep, simply return the evaluation (stop the search)
     if (ply > max_ply - 1)
         return evaluate<false>();
 
