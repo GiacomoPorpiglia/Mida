@@ -84,8 +84,8 @@ void playMove(MOVE move)
                 pop_bit(pieces_bb[WHITE][R], 7);
                 set_bit(pieces_bb[WHITE][R], 5);
 
-                board.allPieces[7] = -1;
-                board.allPieces[5] = 2;
+                board.allPieces[7] = NOPIECE;
+                board.allPieces[5] = R;
             }
             // queenside
             else

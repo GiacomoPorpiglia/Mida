@@ -23,7 +23,6 @@ int nodes = 0;
 
 movesList mGen[max_ply];
 
-Thread td;
 
 int LMR_table[max_ply][64];
 int LMP_table[2][8];
@@ -268,11 +267,11 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
     tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
     if (ttEntry!=nullptr && ply && !pv_node) {
-        static_eval = ttEntry->value;
-        if(ttEntry->depth >= depth && 
-          (ttEntry->flag  == HASH_FLAG_EXACT || 
-          (ttEntry->flag  == HASH_FLAG_ALPHA && ttEntry->value <= alpha) || 
-          (ttEntry->flag  == HASH_FLAG_BETA  && ttEntry->value >= beta)))
+        static_eval = ttEntry->eval;
+        if (ttEntry->depth >= depth &&
+            (ttEntry->flag == HASH_FLAG_EXACT ||
+            (ttEntry->flag == HASH_FLAG_ALPHA && ttEntry->eval <= alpha) ||
+            (ttEntry->flag == HASH_FLAG_BETA && ttEntry->eval >= beta)))
             return static_eval;
     }
 
@@ -607,13 +606,11 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
             if (evaluation > alpha)
             {
-
                 // switch hahs flag to the one storing score for PV node
                 hash_f = HASH_FLAG_EXACT;
 
                 best_move = move;
                     
-
                 alpha = evaluation;
 
                 // write PV move
@@ -632,7 +629,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                     // store hash entry
                     writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
-                    // store killer moves (only if it's a quiet move)
+                    // update killer and history moves (only if it's a quiet move)
                     if (is_quiet)
                     {
                         // update killer moves
@@ -654,10 +651,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
 static inline void print_move(MOVE move)
 {
-    printf("%s", coordFromPosition[getSquareFrom(move)]); // board.coordFromBitboardPosition((int)getSquareFrom(move)).c_str());
-    printf("%s", coordFromPosition[getSquareTo(move)]);   // board.coordFromBitboardPosition((int)getSquareTo(move)).c_str());
-    // promotion
-    if (getNewPieceType(move) != P && board.allPieces[getSquareFrom(move)] == P)
+    printf("%s", coordFromPosition[getSquareFrom(move)]); 
+    printf("%s", coordFromPosition[getSquareTo(move)]);
+    // in case of promotion
+    if (isPromotion(move))
     {
         if (getNewPieceType(move) == Q)
             printf("q");
@@ -673,22 +670,19 @@ static inline void print_move(MOVE move)
 void search_position(int maxDepth)
 {
     int evaluation = 0;
-    // clear helper data structures for search
-    nodes = 0;
+    
+    nodes = 0; //reset nodes counter
     // reset follow PV flags
     follow_pv = 0;
     score_pv = 0;
-    // reset ply
-    ply = 0;
-    // reset "time is up" flag
-    stopped = 0;
+    ply = 0; // set ply to 0
+    stopped = 0; // reset "time is up" flag
 
     memset(killer_moves, 0, sizeof(killer_moves));
     memset(history_moves, 0, sizeof(history_moves));
     memset(pv_table, 0, sizeof(pv_table));
     memset(pv_length, 0, sizeof(pv_length));
-    currentAge++;
-    //clearTranspositionTable();
+    currentAge++; // increase currentAge for hash table at each new search
 
     int alpha = -inf;
     int beta = inf;
@@ -698,20 +692,20 @@ void search_position(int maxDepth)
     // iterative deepening
     for (int curr_depth = 1; curr_depth <= maxDepth; curr_depth++)
     {
-        td.searchDepth = curr_depth;
         ply = 0;
-        for(int i = 0; i < 65; i++) {
+        //reset computed accumulations
+        for(int i = 0; i < max_ply+1; i++)
             nn_stack[i].accumulator.computedAccumulation=0;
-        }
 
-        if (stopped == 1)
-        {
-            // stop calculating and return best move so far
+
+        // stop calculating and return best move so far
+        if (stopped == 1)   
             break;
-        }
+        
 
-        // enable follow PV flag
-        follow_pv = 1;
+        follow_pv = 1; // enable follow PV flag
+
+        //Aspiration window
 
         alpha = evaluation - delta;
         beta  = evaluation + delta;
@@ -736,21 +730,7 @@ void search_position(int maxDepth)
             continue;
         }
 
-        delta = 25;
-        
-
-        // if ((evaluation <= alpha) || (evaluation >= beta))
-        // {
-        //     alpha = -inf;
-        //     beta = inf;
-        //     curr_depth--;
-        //     continue;
-        // }
-
-        
-        // // set up the window for the next iteration
-        // alpha = evaluation - 50;
-        // beta  = evaluation + 50;
+        delta = 25; // reset aspiration window size
 
         // if PV is available
         if (pv_length[0])

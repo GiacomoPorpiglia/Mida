@@ -8,7 +8,7 @@
 #include <iostream>
 
 int hash_table_size = 64; //MB (64 MB default)
-int hash_table_entries;// = hash_table_size*1024*1024/sizeof(tt); // 2796202 = 64MB
+int hash_table_entries;  // = hash_table_size*1024*1024/sizeof(tt);
 
 tt* transposition_table;
 
@@ -21,7 +21,7 @@ void init_hash_table() {
     clearTranspositionTable();
 }
 
-// initialize / clear transposition table
+// clear transposition table
 void clearTranspositionTable()
 {
     currentAge = 0;
@@ -117,10 +117,10 @@ tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
     if (hash_entry->hash_key == hash_key)
     {
         best_move = hash_entry->best_move;
-        if (hash_entry->value < -MATE_SCORE)
-                hash_entry->value += ply;
-        if (hash_entry->value > MATE_SCORE)
-            hash_entry->value -= ply;
+        if (hash_entry->eval < -MATE_SCORE)
+                hash_entry->eval += ply;
+        if (hash_entry->eval > MATE_SCORE)
+            hash_entry->eval -= ply;
         return hash_entry;
         
     }
@@ -133,6 +133,11 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
     // address of the position in the transposition table we want to write in
     tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
 
+    /*we write if one of these conditions happpens:
+        - the entry is empty
+        - the age is less that the current age(meaning the entry comes from an older search)
+        - the depth of the entry is less than the current one (we prefer entries coming from nodes closer to the root, because they can cause more cutoffs)
+    */
     bool replace = !hash_entry->hash_key || (hash_entry->age != currentAge || hash_entry->depth <= depth);
 
     if(!replace) return;
@@ -145,7 +150,7 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
         evaluation += ply;
 
     hash_entry->depth = (uint8_t)depth;
-    hash_entry->value = (int16_t)evaluation;
+    hash_entry->eval = (int16_t)evaluation;
     hash_entry->flag = (uint8_t)hash_flag;
     hash_entry->hash_key = hash_key;
     hash_entry->best_move = best_move;

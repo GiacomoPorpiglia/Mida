@@ -28,7 +28,7 @@ typedef struct
     uint8_t depth;         // current depth of the search
     uint8_t flag : 2;      // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
     uint8_t age : 6;       // store the age at which entry was written
-    int16_t value;         // evaluation of the position
+    int16_t eval;         // evaluation of the position
     MOVE best_move;       // best move
     
 } tt;

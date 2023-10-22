@@ -30,12 +30,7 @@ typedef struct {
     MOVE move;
 } SearchStack;
 
-typedef struct {
-    int searchDepth;
-} Thread;
-
 extern SearchStack searchStack[max_ply + 1];
-extern Thread td;
 
 // returns true if the position is  draw for unsufficient material
 static inline bool isInsufficientMaterial();
