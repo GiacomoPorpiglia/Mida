@@ -23,12 +23,7 @@ static inline int pop_lsb(uint64_t &bb)
 
 static inline int getEnPassantSquare(uint16_t boardSpecs)
 {
-    if ((boardSpecs >> 4) < 64)
-    {
-        return (int)(boardSpecs >> 4);
-    }
-    else
-        return -1;
+    return ((boardSpecs >> 4) < 64) ? ((int)(boardSpecs >> 4)) : -1;
 }
 
 static inline void unsetEnPassantSquare(uint16_t &boardSpecs)
