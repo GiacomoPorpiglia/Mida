@@ -187,10 +187,7 @@ static inline MOVE parse_move(char const *move_string)
 {
     movesList moveList;
     // create move list instance
-    if (board.colorToMove == 1)
-        board.calculateWhiteMoves(&moveList);
-    else
-        board.calculateBlackMoves(&moveList);
+    board.calculateMoves(board.colorToMove, &moveList);
 
     // parse source square
     int source_square = (move_string[0] - 'a') + (move_string[1] - '1') * 8;
@@ -449,7 +446,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 2.1\n");
+    printf("id name MIDA 2.2\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -473,7 +470,6 @@ void uci_loop()
         else if (strncmp(input, "position", 8) == 0)
         {
             parse_position(input);
-            clearTranspositionTable();
         }
 
         else if (strncmp(input, "ucinewgame", 10) == 0)
@@ -487,15 +483,32 @@ void uci_loop()
             parse_go(input);
         }
 
+        else if(!strncmp(input, "setoption name Hash value ", 26)) {
+            int currentHashSize = hash_table_size;
+            int newHashSize;
+            sscanf(input,"%*s %*s %*s %*s %d",&newHashSize);
+			if(newHashSize < 4) newHashSize = 4;
+			if(newHashSize > MAX_HASH) newHashSize = MAX_HASH;
+
+            if(newHashSize!=currentHashSize) {
+                hash_table_size = newHashSize;
+                free(transposition_table);
+                init_hash_table();
+            }
+        }
+
         else if (strncmp(input, "quit", 4) == 0)
         {
+            free(transposition_table);
             break;
         }
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 2.1\n");
+            printf("id name MIDA 2.2\n");
             printf("id author Giacomo Porpiglia\n");
+            printf("setoption name Hash type spin default 64 min 4 max 1024\n");
+
             printf("uciok\n");
         }
     }

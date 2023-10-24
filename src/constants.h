@@ -6,6 +6,7 @@
 
 
 #define ILLEGAL_MOVE 0
+#define NULL_MOVE 0
 // transposition table hash flags
 #define HASH_FLAG_EXACT 0
 #define HASH_FLAG_ALPHA 1
@@ -16,8 +17,10 @@
 #define MATE_SCORE 48000
 #define MATE_VALUE 49000
 
-#define HASH_TABLE_SIZE 8000000 // 200 MB
+// #define HASH_TABLE_ENTRIES 8000000 // each entry is 24 bytes
 #define NULL_HASH_ENTRY 100000  // to make sure it goes outside the alpha-beta window
+
+#define MAX_HASH 1024 // 1024 MB max hash table size
 
 #define WHITE 1
 #define BLACK 0
@@ -125,5 +128,8 @@ extern const uint64_t CenterFiles;
 extern const uint64_t kingFlank[8];
 
 extern const uint64_t center;
+
+
+extern int currentAge;
 
 #endif

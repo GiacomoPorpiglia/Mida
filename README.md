@@ -15,7 +15,7 @@ Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for 
 
 ## Engine strength
 
-
+- v2.2: &nbsp;&nbsp;&nbsp;&nbsp; Not tested yet
 - v2.1: &nbsp;&nbsp;&nbsp;&nbsp; 2930 ELO on [CCRL 40/15](https://ccrl.chessdom.com/ccrl/4040/) 
 - v2.0: &nbsp;&nbsp;&nbsp;&nbsp;   ~2600 ELO (Not tested)
 - v1.2.1:&nbsp;&nbsp; 2360 ELO on [CCRL blitz](https://ccrl.chessdom.com/ccrl/404/) 
@@ -54,10 +54,6 @@ The search is based on Alpha-beta pruning algorithm, with various techniques (li
 * Late move reduction
 * Delta pruning
 
-To add:
-* "Improving cuts": I don't know if that's the proper name of the technique or if it even has a name. 
-Basically, the idea is to see if by going down a branch we are finding better positions (so, if we are improving), and if we are, we want to search that branch deeper. On the contrary, if we are not improving, chances are that's not going to be a good branch, and so we can prune and reduce it more aggressively.
-
 <br />
 
 ## How to use
@@ -80,10 +76,9 @@ For this project I used a lot of awesome resources:
 - [Chess programming Wiki](https://www.chessprogramming.org/Main_Page)
 - [Chess programming Youtube Series by Maksim Korzh](https://www.youtube.com/watch?v=QUNP-UjujBM&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
 - [dshawul](https://github.com/dshawul) and his [NNUE-probe library](https://github.com/dshawul/nnue-probe)
+- [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 
-I also want to thank [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
-
-Finally, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
+Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
 ## Donations
 
@@ -92,23 +87,22 @@ Thank you for supporting Mida developement and training through
 [![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal1.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
-# v1.1 updates
-The main updates in v1.1 are:
+# v2.2 Updates
+- Changed History heuristic (now aligned with the implementation of all top engines). This improves the move ordering. Also, history score is now used in LMR to adjust the reduction.
 
-* 10% increment in computed nodes per second.
-* New evaluation function (not in its parameters, but much more readable and easily changable).
-* Space evaluation and king on open flank.
+- "Improving cuts": We check if the evaluation has improved compared to the eval from the second last node, and if the score is lower, (meaning the branch is not improving), we can search it with more aggressive prunings (for now only in LMP) because it's probably not a good branch.
 
-# v1.2 Updates
-This version has its main updates in the search function.
-- Reverse futility pruning.
-- More aggressive null move pruning.
+- Increased reduction in Null Move Pruning: the reduction is now adjusted also based on the distance of the eval from beta. Also, null move pruning is now applied only if the eval is >= than beta.
 
-# v2.0 Updates
-- Introducing NNUE evaluation
-- Delta pruning
-- Fixed bug in null move pruning
+- Changes in LMR: the reduction factor (from now will be called R) is now not only the value from the LMR table, but is also adjusted based on the move. In particular:
+    - we reduce R by 2 if the move is a killer move.
+    - We reduce R by a factor history / 4000, where history is the history score for the move
+    - We increase R by 1 if the nod is a non-pv node
+    - We increase R by 1 if we are not improving
+    - We increase R by 1 if the move is quiet
 
+- Hash table size set to a default value of 64 MB (still have to make it customizable)
+- Optimizations in tt entry's size (previouslt 24 bytes, now 16) and added Aging as overwriting condition.
 
 # v2.1 Updates
 - Mate distance pruning
@@ -117,3 +111,21 @@ This version has its main updates in the search function.
 - SEE (static exchange evaluation) for move ordering as well as pruning techniques
 - Fixed bug in history moves
 - Use of transposition table's evaluation also when we don't return it straight away, meaning we can use the stored eval instead of the NNUE eval of the position. We do this because the tt eval is more accurate, since it comes from a search and not a simple positional evaluation.
+
+# v2.0 Updates
+- Introducing NNUE evaluation
+- Delta pruning
+- Fixed bug in null move pruning
+
+# v1.2 Updates
+This version has its main updates in the search function.
+- Reverse futility pruning.
+- More aggressive null move pruning.
+
+# v1.1 updates
+The main updates in v1.1 are:
+
+* 10% increment in computed nodes per second.
+* New evaluation function (not in its parameters, but much more readable and easily changable).
+* Space evaluation and king on open flank.
+

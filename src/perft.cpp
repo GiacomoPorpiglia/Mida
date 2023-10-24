@@ -9,11 +9,9 @@ int perft(int depth, int maxDepth)
     int counter = 0;
     if (depth == 0)
         return 1;
+    
     movesList moveList;
-    if (board.colorToMove == 1)
-        board.calculateWhiteMoves(&moveList);
-    else
-        board.calculateBlackMoves(&moveList);
+    board.calculateMoves(board.colorToMove, &moveList);
 
     MOVE move;
     for (int count = 0; count < moveList.count; count++)

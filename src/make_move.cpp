@@ -84,8 +84,8 @@ void playMove(MOVE move)
                 pop_bit(pieces_bb[WHITE][R], 7);
                 set_bit(pieces_bb[WHITE][R], 5);
 
-                board.allPieces[7] = -1;
-                board.allPieces[5] = 2;
+                board.allPieces[7] = NOPIECE;
+                board.allPieces[5] = R;
             }
             // queenside
             else
@@ -128,7 +128,7 @@ void playMove(MOVE move)
             pop_bit(board.boardSpecs, 1);
             hash_key ^= castle_keys[generate_castle_key_index()];
         }
-        if (pieceType == R)
+        else if (pieceType == R)
         {
             if (squareFrom == 0)
             {
@@ -259,7 +259,7 @@ void playMove(MOVE move)
             pop_bit(board.boardSpecs, 3);
             hash_key ^= castle_keys[generate_castle_key_index()];
         }
-        if (pieceType == R)
+        else if (pieceType == R)
         {
             if (squareFrom == 56)
             {
@@ -286,7 +286,7 @@ void playMove(MOVE move)
         }
     }
     hash_key ^= side_key;
-    board.colorToMove = (board.colorToMove + 1) % 2;
+    board.colorToMove ^= 1;// (board.colorToMove + 1) % 2;
 }
 
 /**
@@ -299,7 +299,7 @@ void playMove(MOVE move)
 void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPieceType)
 {
 
-    board.colorToMove = (board.colorToMove + 1) % 2;
+    board.colorToMove ^= 1;//(board.colorToMove + 1) % 2;
 
     squareFrom = getSquareFrom(move);
     squareTo = getSquareTo(move);
@@ -332,7 +332,7 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
 
             set_bit(pieces_bb[BLACK][P], squareTo - 8);
 
-            board.allPieces[squareTo - 8] = 5;
+            board.allPieces[squareTo - 8] = P;
         }
         // castle
         else if (oldPieceType == K && abs(squareTo - squareFrom) == 2)
@@ -423,7 +423,7 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
 // make null move(basically skipping a turn without any other change to the board, used in null move pruning)
 void makeNullMove()
 {
-    board.colorToMove = (board.colorToMove + 1) % 2;
+    board.colorToMove ^= 1;//(board.colorToMove + 1) % 2;
     hash_key ^= side_key;
     // reset en passant in hash key
     if (getEnPassantSquare(board.boardSpecs) != -1)
@@ -433,7 +433,7 @@ void makeNullMove()
 // unmake null move(used in null move pruning)
 void unmakeNullMove(uint16_t copySpecs)
 {
-    board.colorToMove = (board.colorToMove + 1) % 2;
+    board.colorToMove ^= 1;//(board.colorToMove + 1) % 2;
     hash_key ^= side_key;
     if (getEnPassantSquare(copySpecs) != -1)
         hash_key ^= en_passant_keys[getEnPassantSquare(copySpecs)];

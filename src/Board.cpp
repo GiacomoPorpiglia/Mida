@@ -910,8 +910,12 @@ uint64_t Board::attackersForSide(int color, int sq, uint64_t occupancy) {
 
 
 
-void Board::calculateMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], movesList *moveList)
+void Board::calculateMoves(int side_to_move, movesList *moveList)
 {
+
+    uint64_t* colorToMoveBitboards = pieces_bb[ side_to_move];
+    uint64_t* opponentBitboards    = pieces_bb[!side_to_move];
+
     (*moveList).count = 0;
     checkers_bb = 0ULL;
     // checkers.clear();

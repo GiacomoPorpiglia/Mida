@@ -7,6 +7,9 @@
 
 //--------------ZOBRIST HASHING---------------------
 
+extern int hash_table_size;
+extern int hash_table_entries;
+
 // random piece keys
 extern uint64_t piece_keys[2][6][64];
 // random en passant keys
@@ -21,15 +24,18 @@ extern uint64_t hash_key;
 // Transposition table elements structure
 typedef struct
 {
-    MOVE best_move;    // best move
-    int depth;         // current depth of the search
-    int flag;          // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
-    int value;         // evaluation of the position
-    uint64_t hash_key; // hash key of the position
+    uint64_t hash_key;     // hash key of the position
+    uint8_t depth;         // current depth of the search
+    uint8_t flag : 2;      // flag the type of node (fail-high, fail-low, PV) . it will have the values of the HASH_FLAG constants
+    uint8_t age : 6;       // store the age at which entry was written
+    int16_t eval;         // evaluation of the position
+    MOVE best_move;       // best move
+    
 } tt;
 
 // transposition table
-extern tt transposition_table[HASH_TABLE_SIZE];
+extern tt* transposition_table;
+void init_hash_table();
 
 // initialize / clear transposition table
 void clearTranspositionTable();

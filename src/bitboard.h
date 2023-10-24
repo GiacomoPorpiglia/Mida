@@ -6,13 +6,33 @@
 #include <vector>
 #include <string>
 
+#if defined(_MSC_VER) && defined(_WIN64) // for _mm_popcnt_64
+#include <intrin.h>
+#endif
+
 #define get_bit(bitboard, square) (bitboard & (1ULL << square))
 #define set_bit(bitboard, square) (bitboard |= (1ULL << square))
 #define pop_bit(bitboard, square) (get_bit(bitboard, square) ? (bitboard ^= (1ULL << square)) : 0)
-#define bitScanForward(bb) (std::__countr_zero(bb))
-#define count_bits(bb) (__builtin_popcountll(bb))
-
 #define FLIP(sq) ((sq) ^ 56)
+
+inline int bitScanForward(uint64_t bb) {
+    unsigned long idx;
+    _BitScanForward64(&idx, bb);
+    return (int)idx;
+}
+
+inline int count_bits(uint64_t bb) {
+    #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+
+    return (int)_mm_popcnt_u64(bb);
+
+    #else
+
+        return __builtin_popcountll(bb);
+
+    #endif
+}
+
 
 static inline int pop_lsb(uint64_t &bb)
 {
@@ -23,12 +43,7 @@ static inline int pop_lsb(uint64_t &bb)
 
 static inline int getEnPassantSquare(uint16_t boardSpecs)
 {
-    if ((boardSpecs >> 4) < 64)
-    {
-        return (int)(boardSpecs >> 4);
-    }
-    else
-        return -1;
+    return ((boardSpecs >> 4) < 64) ? ((int)(boardSpecs >> 4)) : -1;
 }
 
 static inline void unsetEnPassantSquare(uint16_t &boardSpecs)
