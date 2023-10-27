@@ -106,7 +106,7 @@ void init_random_keys()
 }
 
 // read entry from the transposition table
-tt* readHashEntry(int depth, int alpha, int beta, MOVE &best_move)
+tt* readHashEntry(MOVE &best_move)
 {
     // addressing the location of the entry we want to read
     tt *hash_entry = transposition_table + (hash_key % hash_table_entries);

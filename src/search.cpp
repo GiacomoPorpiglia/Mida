@@ -254,7 +254,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     bool is_root = (ply==0);
     // read hash entry
 
-    tt* ttEntry = readHashEntry(depth, alpha, beta, best_move);
+    tt* ttEntry = readHashEntry(best_move);
     if (ttEntry!=nullptr && ply && !pv_node) {
         static_eval = ttEntry->eval;
         if (ttEntry->depth >= depth &&
