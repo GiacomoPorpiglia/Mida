@@ -64,9 +64,7 @@ MOVE ORDERING
 4- 2nd KILLER MOVES
 5- HISTORY MOVES
 6- UNSORTED MOVES
-
 */
-
 static inline int scoreMove(MOVE move);
 // extern int move_scores[256];
 // sort moves to make search more efficient, by searching first captures, killers and history moves, and principle variation (PV) moves

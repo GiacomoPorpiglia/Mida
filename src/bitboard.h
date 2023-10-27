@@ -132,7 +132,6 @@ static inline bool isEnPassant(MOVE move)
 }
 
 
-
 std::vector<std::string> splitString(std::string str, char delim);
 
 #endif

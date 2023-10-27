@@ -625,25 +625,25 @@ void Board::addMoves(int squareFrom, uint64_t bb, int pieceType, movesList *move
     int squareTo;
     
     
-    while(bb) {
+    while(bb && moveList->count < MAX_MOVES) {
         squareTo = pop_lsb(bb);
         uint16_t move = squareFrom;
         move |= (squareTo) << 6;
         //if peice is a pawn and it's going to either rank 1 or 8, then it's a promotion
         if (pieceType == P && (get_rank[squareTo] == 0 || get_rank[squareTo] == 7)) {
-            (*moveList).moves[(*moveList).count] = (move | (Q << 12));
-            (*moveList).count++;
-            (*moveList).moves[(*moveList).count] = (move | (R << 12));
-            (*moveList).count++;
-            (*moveList).moves[(*moveList).count] = (move | (B << 12));
-            (*moveList).count++;
-            (*moveList).moves[(*moveList).count] = (move | (N << 12));
-            (*moveList).count++;
+            moveList->moves[moveList->count] = (move | (Q << 12));
+            moveList->count++;
+            moveList->moves[moveList->count] = (move | (R << 12));
+            moveList->count++;
+            moveList->moves[moveList->count] = (move | (B << 12));
+            moveList->count++;
+            moveList->moves[moveList->count] = (move | (N << 12));
+            moveList->count++;
         }
         else
         {
-            (*moveList).moves[(*moveList).count] = (move | (pieceType << 12));
-            (*moveList).count++;
+            moveList->moves[moveList->count] = (move | (pieceType << 12));
+            moveList->count++;
         }
     }
 
@@ -916,7 +916,7 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
     uint64_t* colorToMoveBitboards = pieces_bb[ side_to_move];
     uint64_t* opponentBitboards    = pieces_bb[!side_to_move];
 
-    (*moveList).count = 0;
+    moveList->count = 0;
     checkers_bb = 0ULL;
     // checkers.clear();
     isInCheck = false;

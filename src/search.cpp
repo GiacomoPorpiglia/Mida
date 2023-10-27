@@ -23,16 +23,15 @@ int nodes = 0;
 
 movesList mGen[max_ply];
 
+SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][64];
 int LMP_table[2][8];
 int LMRBase = 75;
 int LMRDivision = 300;
 
-SearchStack searchStack[max_ply+1];
-
-
-void init_search() {
+void initSearch()
+{
     //Init LMR table
     float base = LMRBase / 100.0f;
     float division = LMRDivision / 100.0f;
@@ -48,9 +47,9 @@ void init_search() {
     }
 }
 
-static inline int relative_square(int sq) {
-    if(board.colorToMove) return sq;
-    return FLIP(sq);
+static inline int relativeSquare(int sq)
+{
+    return board.colorToMove ? sq : FLIP(sq);
 }
 
 //populate the dirty piece for current ply in case of null move(from CFish)
@@ -78,8 +77,8 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     if(isCastle(move)) {
 
         int kingSide = to > from;
-        rfrom = relative_square(kingSide ? 7 : 0);
-        rto   = relative_square(kingSide ? 5 : 3);
+        rfrom = relativeSquare(kingSide ? 7 : 0);
+        rto   = relativeSquare(kingSide ? 5 : 3);
 
         dp->dirtyNum = 2;
         dp->pc[1]    = board.colorToMove ? pieces::wrook : pieces::brook;
@@ -116,7 +115,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
 
 
 
-static inline bool repetition_detection()
+static inline bool repetitionDetection()
 {
     // loop over repetitions positions
     for (int i = 0; i < repetition_index; i++)
@@ -178,9 +177,8 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
             In quiescence, we can skip captures evaluated as losing by SEE with confidence that they will not result in a better position
             */
             if (moveList->move_scores[moveCount] < WinningCaptureScore && playedCount >= 1)
-            {
                 continue;
-            }
+            
 
             int oldPieceType = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
@@ -208,24 +206,15 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
             unplayMove(move, oldPieceType, oldSpecs, capturedPieceType);
 
             // return 0 if time is up
-            if (stopped == 1)
+            if (stopped)
                 return 0;
 
             if (evaluation > alpha)
             {
                 alpha = evaluation;
-                if (evaluation >= beta)
-                {    
+                if (evaluation >= beta)   
                     return evaluation;
-                }
             }
-
-            // if (evaluation >= beta)
-            //     return beta;
-            // if (evaluation > alpha)
-            // {
-            //     alpha = evaluation;
-            // }
         }
     }
     return alpha;
@@ -254,7 +243,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     MOVE best_move = 0;
 
     // if repetition, return drawing score
-    if (ply && repetition_detection())
+    if (ply && repetitionDetection())
         return 0;
 
     // draw by 50 move rule
@@ -346,6 +335,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             */
             int R = 3 + depth / 3 + std::min(3, (static_eval-beta) / 180);
 
+            //adjust reduction to not exceed the depth
             R = std::min(depth, R);
 
             /* 
@@ -360,14 +350,13 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             board.boardSpecs = copySpecs;
 
             // reutrn 0 if time is up
-            if (stopped == 1)
+            if (stopped)
                 return 0;
 
             // fail-hard beta cutoff
             if (evaluation >= beta)
-            {
                 return evaluation;
-            }
+            
         }
 
 
@@ -419,10 +408,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     if (matingValue < beta)
     {
         beta = matingValue;
-        if (alpha >= matingValue)
-        {
-            return matingValue; // Beta cutoff
-        }
+        if (alpha >= matingValue) return matingValue; // Beta cutoff
     }
 
     // calculate moves
@@ -476,10 +462,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             int history = history_moves[board.colorToMove][oldPieceType][getSquareTo(move)];
 
             //skip quiet moves
-            if (is_quiet && skip_quiet_moves) 
-            {
+            if (is_quiet && skip_quiet_moves)
                 continue;
-            }
+            
 
             if (!is_root && !in_check && is_quiet) {
                 
@@ -509,17 +494,16 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 }
 
                 //SEE pruning for quiets
-                if(depth <= 8 && !see(move, -70*depth)) {
+                if(depth <= 8 && !see(move, -70*depth))
                     continue;
-                }
+                
             }
             //if not quiet move
             else {
                 //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
                 //Slso, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
-                if(depth <= 6 && !see(move, -15*depth*depth)) {
-                    continue;
-                }
+                if(depth <= 6 && !see(move, -15*depth*depth))
+                    continue;  
             }
 
 
@@ -600,7 +584,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             unplayMove(move, oldPieceType, oldSpecs, capturedPieceType);
 
             // reutrn 0 if time is up
-            if (stopped == 1)
+            if (stopped)
                 return 0;
 
 
@@ -649,7 +633,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     return alpha;
 }
 
-static inline void print_move(MOVE move)
+static inline void printMove(MOVE move)
 {
     printf("%s", coordFromPosition[getSquareFrom(move)]); 
     printf("%s", coordFromPosition[getSquareTo(move)]);
@@ -752,7 +736,7 @@ void search_position(int maxDepth)
             for (int count = 0; count < pv_length[0]; count++)
             {
                 // print PV move
-                print_move(pv_table[0][count]);
+                printMove(pv_table[0][count]);
                 printf(" ");
             }
 
@@ -763,7 +747,7 @@ void search_position(int maxDepth)
 
     MOVE best_move = pv_table[0][0];
     printf("bestmove ");
-    print_move(best_move);
+    printMove(best_move);
     printf("\n");
     
 }

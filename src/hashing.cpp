@@ -7,7 +7,7 @@
 #include "bitboard.h"
 #include <iostream>
 
-int hash_table_size = 64; //MB (64 MB default)
+int hash_table_size = 64; //MB (64 MB default size)
 int hash_table_entries;  // = hash_table_size*1024*1024/sizeof(tt);
 
 tt* transposition_table;
@@ -15,8 +15,7 @@ tt* transposition_table;
 void init_hash_table() {
     hash_table_entries = hash_table_size*1024*1024/sizeof(tt);
     int bytes = hash_table_entries*sizeof(tt);
-    transposition_table = (tt*)malloc(bytes);
-    currentAge = 0;
+    transposition_table = (tt*)malloc(bytes); // allocate dynamic memory
 
     clearTranspositionTable();
 }
@@ -24,7 +23,7 @@ void init_hash_table() {
 // clear transposition table
 void clearTranspositionTable()
 {
-    currentAge = 0;
+    currentAge = 0; // reset age
     memset(transposition_table, 0, hash_table_entries * sizeof(tt));
     std::cout << "Hash table Initialized with size " << hash_table_size << " MB\n\n";
 }
@@ -56,10 +55,10 @@ uint64_t generate_hash_key()
     {
         int pieceTypeOnWhite = board.getWhitePieceTypeOnSquare(square);
         int pieceTypeOnBlack = board.getBlackPieceTypeOnSquare(square);
-        if (pieceTypeOnWhite != -1)
-            final_key ^= piece_keys[1][pieceTypeOnWhite][square];
-        if (pieceTypeOnBlack != -1)
-            final_key ^= piece_keys[0][pieceTypeOnBlack][square];
+        if (pieceTypeOnWhite != NOPIECE)
+            final_key ^= piece_keys[WHITE][pieceTypeOnWhite][square];
+        if (pieceTypeOnBlack != NOPIECE)
+            final_key ^= piece_keys[BLACK][pieceTypeOnBlack][square];
     }
 
     if (getEnPassantSquare(board.boardSpecs) != -1)
@@ -91,8 +90,8 @@ void init_random_keys()
         for (int square = 0; square < 64; square++)
         {
             // init random piece keys
-            piece_keys[0][piece][square] = random_uint64_t();
-            piece_keys[1][piece][square] = random_uint64_t();
+            piece_keys[BLACK][piece][square] = random_uint64_t();
+            piece_keys[WHITE][piece][square] = random_uint64_t();
         }
     }
     for (int square = 0; square < 64; square++)

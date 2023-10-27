@@ -21,7 +21,7 @@ void init_all() {
     init_random_keys();
     init_sliders_attacks(bishop);
     init_sliders_attacks(rook);
-    init_search();
+    initSearch();
 }
 
 int main() {

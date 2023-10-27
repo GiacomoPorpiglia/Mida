@@ -35,18 +35,12 @@ const int B = 3;
 const int N = 4;
 const int P = 5;
 const int ALL_PIECES = 6;
-#define NOPIECE -1
-// extern const int K;
-// extern const int Q;
-// extern const int R;
-// extern const int B;
-// extern const int N;
-// extern const int P;
-// extern const int ALL_PIECES;
+const int NOPIECE  = -1;
 
 #define inf 50000
 
 #define max_ply 64
+#define MAX_MOVES 128
 
 #define WIN32_LEAN_AND_MEAN
 #define startpos "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -66,8 +60,8 @@ const int ALL_PIECES = 6;
 
 typedef struct
 {
-    MOVE moves[256];
-    int move_scores[256];
+    MOVE moves[MAX_MOVES];
+    int move_scores[MAX_MOVES];
     int count;
 } movesList;
 

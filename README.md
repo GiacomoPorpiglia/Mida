@@ -1,5 +1,6 @@
 
 <div align="center">
+<img alt="Mida logo" src="./imgs/logo_no_bg.png" style="width:50%;">
 
 <b><i>Strong UCI chess engine written in C++</i></b>
 
@@ -77,6 +78,7 @@ For this project I used a lot of awesome resources:
 - [Chess programming Youtube Series by Maksim Korzh](https://www.youtube.com/watch?v=QUNP-UjujBM&list=PLmN0neTso3Jxh8ZIylk74JpwfiWNI76Cs)
 - [dshawul](https://github.com/dshawul) and his [NNUE-probe library](https://github.com/dshawul/nnue-probe)
 - [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
+- [SaccoVinc](https://github.com/SaccoVinc) for creating Mida's logo
 
 Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
 
@@ -84,7 +86,7 @@ Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code pro
 
 Thank you for supporting Mida developement and training through 
 
-[![Paypal](https://raw.githubusercontent.com/GiacomoPorpiglia/Mida/master/paypal1.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
+[![Paypal](./imgs/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
 # v2.2 Updates
