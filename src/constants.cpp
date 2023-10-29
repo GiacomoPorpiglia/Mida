@@ -633,12 +633,13 @@ uint64_t black_passed_mask[64] = {
 
 const uint64_t black_squares_bb = 12273903644374837845;
 const uint64_t white_squares_bb = 6172840429334713770;
+const uint64_t center = 69122129920;
 
-const uint64_t queenSide = file_masks[0] | file_masks[1] | file_masks[2] | file_masks[3];
-const uint64_t kingSide = file_masks[4] | file_masks[5] | file_masks[6] | file_masks[7];
+const uint64_t queenSide   = file_masks[0] | file_masks[1] | file_masks[2] | file_masks[3];
+const uint64_t kingSide    = file_masks[4] | file_masks[5] | file_masks[6] | file_masks[7];
 const uint64_t CenterFiles = file_masks[2] | file_masks[3] | file_masks[4] | file_masks[5];
 const uint64_t kingFlank[8] = {
     queenSide ^ file_masks[3], queenSide, queenSide,
     CenterFiles, CenterFiles,
-    kingSide, kingSide, kingSide ^ file_masks[4]};
-const uint64_t center = 69122129920;
+    kingSide, kingSide, kingSide ^ file_masks[4]
+};

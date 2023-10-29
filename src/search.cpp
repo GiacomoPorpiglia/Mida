@@ -274,7 +274,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
 
     if (depth <= 0)
         // run quiescence search
-        return quiescence(alpha, beta, ss + 1);
+        return quiescence(alpha, beta, ss);
 
     // if we went too deep, there is overflow in killer moves, history moves and PV.
     if (ply > max_ply - 1)
@@ -359,7 +359,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             
         }
 
-
+      
         //razoring (inspired from Strelka)
         if(depth <= 2) {
             // add first bonus
@@ -374,7 +374,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 if (depth == 1)
                 {
                     // get quiscence score
-                    new_eval = quiescence(alpha, beta, ss + 1);
+                    new_eval = quiescence(alpha, beta, ss);
                     // return quiescence score if it's greater then static evaluation score
 
                     return (new_eval > evaluation) ? new_eval : evaluation;
@@ -385,7 +385,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 if ((evaluation < beta) && (depth <= 2))
                 {
                     // get quiscence score
-                    new_eval = quiescence(alpha, beta, ss + 1);
+                    new_eval = quiescence(alpha, beta, ss);
 
                     // quiescence score indicates fail-low node
                     if (new_eval < beta)
