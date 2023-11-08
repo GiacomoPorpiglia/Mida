@@ -128,6 +128,9 @@ static inline bool repetitionDetection()
 
 static inline int quiescence(int alpha, int beta, SearchStack *ss)
 {
+    int best_score = -MATE_VALUE;
+    int standing_pat, evaluation;
+    MOVE best_move;
     // every 2047 nodes
     if ((nodes & 2047) == 0)
         // "listen" to the GUI/user input
@@ -141,20 +144,33 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     // if we went too deep, simply return the evaluation (stop the search)
     if (ply > max_ply - 1)
         return evaluate<false>();
+    
+    bool pv_node = (beta - alpha) > 1;
 
-    int evaluation = evaluate<true>();
+    standing_pat = evaluate<true>();
 
-    ss->static_eval = evaluation;
+    ss->static_eval = standing_pat;
     
     //Delta pruning
-    if(evaluation < alpha-pieceValues[Q]) return alpha;
+    if(standing_pat < alpha-pieceValues[Q]) return alpha;
 
-    if (evaluation > alpha)
+    if (standing_pat > alpha)
     {
-        if (evaluation >= beta)
+        if (standing_pat >= beta)
             return beta;
-        alpha = evaluation;
+        alpha = standing_pat;
     }
+    
+    tt* ttEntry = readHashEntry(best_move);
+    if (ttEntry!=nullptr && !pv_node) {
+        evaluation = ttEntry->eval;
+        if ((ttEntry->flag == HASH_FLAG_EXACT ||
+            (ttEntry->flag == HASH_FLAG_ALPHA && ttEntry->eval <= alpha) ||
+            (ttEntry->flag == HASH_FLAG_BETA  && ttEntry->eval >= beta)))
+            return evaluation;
+    }
+
+
     movesList *moveList = &mGen[ply];
 
     board.calculateMoves(board.colorToMove, moveList);
@@ -163,23 +179,24 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     sortMoves(moveList, 0);
     MOVE move;
     int playedCount = 0; //counter of played moves
+
+    best_score = standing_pat;
+    best_move = NULL_MOVE; 
+
     for (int moveCount = 0; moveCount < moveList->count; moveCount++)
     {
         pickNextMove(moveList, moveCount);
         move = moveList->moves[moveCount];
         
-
         // only look at captures and promotions
         if (isCapture(move) || isEnPassant(move) || isPromotion(move))
         {
-
             /*
             In quiescence, we can skip captures evaluated as losing by SEE with confidence that they will not result in a better position
             */
             if (moveList->move_scores[moveCount] < WinningCaptureScore && playedCount >= 1)
                 continue;
             
-
             int oldPieceType = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
 
@@ -209,15 +226,22 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
             if (stopped)
                 return 0;
 
-            if (evaluation > alpha)
-            {
-                alpha = evaluation;
-                if (evaluation >= beta)   
-                    return evaluation;
+            //we beat the best move
+            if(evaluation > best_score) {
+                best_score = evaluation;
+                best_move  = move;
+                if(evaluation > alpha) {
+                    alpha = evaluation;
+                    if(evaluation >= beta)
+                        break;
+                    
+                }
             }
         }
     }
-    return alpha;
+    int flag = best_score >= beta ? HASH_FLAG_BETA : HASH_FLAG_ALPHA;
+    writeHashEntry(0, best_score, best_move, flag);
+    return best_score;
 }
 
 

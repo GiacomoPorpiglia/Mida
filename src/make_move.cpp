@@ -343,8 +343,8 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
                 pop_bit(pieces_bb[WHITE][R], 5);
                 set_bit(pieces_bb[WHITE][R], 7);
 
-                board.allPieces[7] = 2;
-                board.allPieces[5] = -1;
+                board.allPieces[7] = R;
+                board.allPieces[5] = NOPIECE;
             }
             // queenside
             else
@@ -352,8 +352,8 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
                 pop_bit(pieces_bb[WHITE][R], 3);
                 set_bit(pieces_bb[WHITE][R], 0);
 
-                board.allPieces[0] = 2;
-                board.allPieces[3] = -1;
+                board.allPieces[0] = R;
+                board.allPieces[3] = NOPIECE;
             }
         }
 
@@ -395,8 +395,8 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
                 pop_bit(pieces_bb[BLACK][2], 61);
                 set_bit(pieces_bb[BLACK][2], 63);
 
-                board.allPieces[63] = 2;
-                board.allPieces[61] = -1;
+                board.allPieces[63] = R;
+                board.allPieces[61] = NOPIECE;
             }
             // queenside
             else
@@ -404,8 +404,8 @@ void unplayMove(MOVE move, int oldPieceType, uint16_t oldSpecs, int capturedPiec
                 pop_bit(pieces_bb[BLACK][R], 59);
                 set_bit(pieces_bb[BLACK][R], 56);
 
-                board.allPieces[56] = 2;
-                board.allPieces[59] = -1;
+                board.allPieces[56] = R;
+                board.allPieces[59] = NOPIECE;
             }
         }
         if (capturedPieceType != NOPIECE)
