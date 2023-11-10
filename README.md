@@ -38,12 +38,14 @@ To do this, I followed [this article](https://peterellisjones.com/posts/generati
 From version 2.0, Mida uses <b>Neural Network</b> evaluation, with [HalfKP](https://www.chessprogramming.org/Stockfish_NNUE#HalfKP) structure. 
 
 The network was very briefly trained, because for now that's not what I want to focus on. Still, it does the job.
+More specifically, it was trained for 35 epochs on a small set of Leela and Stockfish data of around 600 million positions. A small part of these were from [DFRC](https://en.wikipedia.org/wiki/Fischer_random_chess) games, but I haven't had the chance to test Mida in this chess variant, so I don't know how it could perform.
 <br />
 
 ## Search
-The search is based on Alpha-beta pruning algorithm, with various techniques (like prunings and reductions) to reduce the number of visited nodes:
+The search is based on Alpha-beta pruning algorithm, with various pruning and reduction techniques to reduce the number of visited nodes and increase the reached depth:
 
 * Move ordering (MMV/LVA)
+* History heuristic
 * Zobrist hashing
 * Reverse futility pruning
 * Null move pruning
@@ -80,13 +82,17 @@ For this project I used a lot of awesome resources:
 - [rafid-dev](https://github.com/rafid-dev), author of the [Rice engine](https://github.com/rafid-dev/rice), who clarified some doubts about NNUEs.
 - [SaccoVinc](https://github.com/SaccoVinc) for creating Mida's logo
 
-Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed.
+Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code properly so that it can execute also on machines without GCC installed, and to all the testers for the useful work they do.
 
 ## Donations
 
 Thank you for supporting Mida developement and training through 
 
 [![Paypal](./imgs/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
+
+
+# v2.3 Updates (Not published, still work in progress)
+- Added transposition table reading and writing in quiescence
 
 
 # v2.2 Updates
