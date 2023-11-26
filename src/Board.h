@@ -1,5 +1,5 @@
-#ifndef Board_H
-#define Board_H
+#ifndef BOARD_H
+#define BOARD_H
 
 #include <iostream>
 #include <string>

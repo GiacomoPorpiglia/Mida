@@ -1,4 +1,4 @@
-#include "Board.h"
+#include "board.h"
 #include "constants.h"
 #include "evaluate.h"
 #include "magic_bitboards.h"
