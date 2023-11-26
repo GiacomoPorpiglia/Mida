@@ -5,8 +5,11 @@
 #include "board_declaration.h"
 #include <vector>
 #include <string>
+#ifdef WIN64
+#include <windows.h>
+#endif
 
-#if defined(_MSC_VER) && defined(_WIN64) // for _mm_popcnt_64
+#if defined(_MSC_VER) && defined(_WIN64) // for _mm_popcnt_u64
 #include <intrin.h>
 #endif
 
@@ -15,22 +18,39 @@
 #define pop_bit(bitboard, square) (get_bit(bitboard, square) ? (bitboard ^= (1ULL << square)) : 0)
 #define FLIP(sq) ((sq) ^ 56)
 
+#if defined(__GNUC__) // GCC, Clang, ICC
+
+inline int bitScanForward(uint64_t bb)
+{
+    if (!bb)
+        return 0;
+    return int(__builtin_ctzll(bb));
+}
+
+#elif defined(_MSC_VER) // MSVC
+
 inline int bitScanForward(uint64_t bb) {
     unsigned long idx;
     _BitScanForward64(&idx, bb);
     return (int)idx;
 }
 
+#else
+
+#error "Compiler not supported."
+
+#endif
+
 inline int count_bits(uint64_t bb) {
-    #if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 
     return (int)_mm_popcnt_u64(bb);
 
-    #else
+#else
 
         return __builtin_popcountll(bb);
 
-    #endif
+#endif
 }
 
 

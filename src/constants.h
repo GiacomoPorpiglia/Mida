@@ -54,7 +54,6 @@ const int NOPIECE  = -1;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <Windows.h>
 #include <stdint.h>
 #include <bit>
 
