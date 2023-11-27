@@ -7,9 +7,10 @@
 #include "hashing.h"
 #include "search.h"
 #include "game_constants.h"
-#ifdef WIN64
+#ifdef _WIN32
 #include <windows.h>
 #else
+#include <sys/select.h>
 #include <time.h>
 #endif
 
