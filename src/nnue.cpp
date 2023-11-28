@@ -48,9 +48,7 @@ INCBIN(Network, defaultEvalFile);
 
 //-------------------
 #include "misc.h"
-#define DLL_EXPORT
 #include "nnue.h"
-#undef DLL_EXPORT
 
 #define KING(c)    ( (c) ? bking : wking )
 #define IS_KING(p) ( ((p) == wking) || ((p) == bking) )
@@ -1295,7 +1293,7 @@ static bool load_eval_file(const char *evalFile)
 /*
 Interfaces
 */
-DLLExport void _CDECL nnue_init(const char* evalFile)
+void nnue_init(const char* evalFile)
 {
   printf("Loading NNUE : %s\n", evalFile);
   fflush(stdout);
@@ -1310,7 +1308,7 @@ DLLExport void _CDECL nnue_init(const char* evalFile)
   fflush(stdout);
 }
 
-DLLExport int _CDECL nnue_evaluate(
+int nnue_evaluate(
   int player, int* pieces, int* squares, NNUEdata* nn)
 {
   (*nn).accumulator.computedAccumulation = 0;
@@ -1325,7 +1323,7 @@ DLLExport int _CDECL nnue_evaluate(
   return nnue_evaluate_pos(&pos);
 }
 
-DLLExport int _CDECL nnue_evaluate_incremental(
+int nnue_evaluate_incremental(
   int player, int* pieces, int* squares, NNUEdata** nnue)
 {
   assert(nnue[0] && (uint64_t)(&nnue[0]->accumulator) % 64 == 0);
@@ -1340,7 +1338,7 @@ DLLExport int _CDECL nnue_evaluate_incremental(
   return nnue_evaluate_pos(&pos);
 }
 
-DLLExport int _CDECL nnue_evaluate_fen(const char* fen)
+int nnue_evaluate_fen(const char* fen)
 {
   NNUEdata nn;
   int pieces[33],squares[33],player,castle,fifty,move_number;
