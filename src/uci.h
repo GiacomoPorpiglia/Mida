@@ -9,10 +9,11 @@
 #include "perft.h"
 #include "hashing.h"
 #include "search.h"
-#ifdef WIN64
+#ifdef _WIN32
 #include <windows.h>
 #else
-#include <time.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #endif
 /*==================================\
 |                                   |
@@ -47,7 +48,7 @@ extern int timeset;
 // variable to flag when the time is up
 extern int stopped;
 
-static inline int gettimeofday(struct timeval *tp, struct timezone *tzp);
+//static inline int gettimeofday(struct timeval *tp, struct timezone *tzp);
 
 // get time in milliseconds
 int get_time_ms();

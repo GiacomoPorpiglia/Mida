@@ -11,7 +11,7 @@
 #include <windows.h>
 #else
 #include <sys/select.h>
-#include <time.h>
+#include <sys/time.h>
 #endif
 
 // exit from engine flag
