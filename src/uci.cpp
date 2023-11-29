@@ -41,6 +41,7 @@ int timeset = 0;
 // variable to flag when the time is up
 int stopped = 0;
 
+/*
 static inline int gettimeofday(struct timeval *tp, struct timezone *tzp)
 {
     // Note: some broken versions only have 8 trailing zero's, the correct epoch has 9 trailing zero's
@@ -61,10 +62,10 @@ static inline int gettimeofday(struct timeval *tp, struct timezone *tzp)
     tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
     return 0;
 }
-
+*/
 int get_time_ms()
 {
-#ifdef WIN64
+#ifdef _WIN32
     return GetTickCount();
 #else
     timeval time_value;
