@@ -16,7 +16,7 @@ Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for 
 
 ## Engine strength
 
-- v2.2: &nbsp;&nbsp;&nbsp;&nbsp; 3090 Elo on [CCRL blitz](https://computerchess.org.uk/ccrl/404/)
+- v2.2: &nbsp;&nbsp;&nbsp;&nbsp; 3091 Elo on [CCRL 40/15](https://computerchess.org.uk/ccrl/4040/), 3090 Elo on [CCRL blitz](https://computerchess.org.uk/ccrl/404/)
 - v2.1: &nbsp;&nbsp;&nbsp;&nbsp; 2941 Elo on [CCRL 40/15](https://computerchess.org.uk/ccrl/4040/) 
 - v2.0: &nbsp;&nbsp;&nbsp;&nbsp;   ~2600 Elo (Not tested)
 - v1.2.1:&nbsp;&nbsp; 2360 Elo on [CCRL blitz](https://computerchess.org.uk/ccrl/404/) 
@@ -62,8 +62,10 @@ The search is based on Alpha-beta pruning algorithm, with various pruning and re
 ## How to use
 To compile the code, just run the commands:
 ```
- cd src
- g++ -static *.cpp -O3 -w -o ../mida_engine.exe
+ git clone https://github.com/GiacomoPorpiglia/Mida
+ cd Mida/src
+ make 
+./Mida
 ```
 
 The engine is built to work with UCI (Universal Chess Interface), and you can easily find all the commands online.
