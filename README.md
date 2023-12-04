@@ -23,6 +23,7 @@ Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for 
 | 2.1      |    2941    |     /      |
 | 2.0      | / (~2600)  | / (~2600)  |
 | 1.2.1    |      /     |    2360    |
+| 1.2      |      /     |      /     |
 | 1.1      |      /     |    2331    |
 | 1.0      |      /     |    2233    |
 
