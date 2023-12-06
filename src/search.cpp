@@ -675,6 +675,23 @@ static inline void printMove(MOVE move)
     }
 }
 
+
+void printPV(int len, int cnt, uint16_t* pv) {
+    if(cnt == len) return;
+
+    uint64_t hash_key_copy = hash_key;
+    int oldPieceType = board.allPieces[getSquareFrom(pv[cnt])];
+    int capturedPieceType = board.allPieces[getSquareTo(pv[cnt])];
+
+    uint16_t oldSpecs = board.boardSpecs;
+    printMove(pv[cnt]);
+    printf(" ");
+    playMove(pv[cnt]);
+    printPV(len, cnt+1, pv);
+    hash_key = hash_key_copy;
+    unplayMove(pv[cnt], oldPieceType, oldSpecs, capturedPieceType);
+}
+
 void search_position(int maxDepth)
 {
     int evaluation = 0;
@@ -756,14 +773,16 @@ void search_position(int maxDepth)
                 printf("info score cp %d depth %d nodes %d nps %d time %d pv ", evaluation, curr_depth, nodes, nps, get_time_ms() - starttime);
 
             
+            printPV(pv_length[0], 0, &(pv_table[0][0]));
+
             // loop over the moves within a PV line
-            for (int count = 0; count < pv_length[0]; count++)
+            /*for (int count = 0; count < pv_length[0]; count++)
             {
                 // print PV move
                 printMove(pv_table[0][count]);
                 printf(" ");
             }
-
+            */
             // print new line
             printf("\n");
         }

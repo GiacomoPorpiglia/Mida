@@ -99,6 +99,9 @@ Thank you for supporting Mida developement and training through
 
 # v2.3 Updates (Not released, still work in progress)
 - Added transposition table reading and writing in quiescence
+- Added makefile to compile Mida on all OS
+- Many bug fixes
+
 
 
 # v2.2 Updates
