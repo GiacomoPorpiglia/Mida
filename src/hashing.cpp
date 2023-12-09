@@ -1,7 +1,5 @@
 #include "hashing.h"
 #include <stdint.h>
-#include "constants.h"
-#include "game_constants.h"
 #include "magic_bitboards.h"
 #include "board_declaration.h"
 #include "bitboard.h"

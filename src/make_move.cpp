@@ -1,9 +1,4 @@
 #include "make_move.h"
-#include "constants.h"
-#include "game_constants.h"
-#include "bitboard.h"
-#include "board_declaration.h"
-#include "hashing.h"
 #include <stdint.h>
 
 int squareFrom = 0, squareTo = 0, newPieceType = 0, pieceType = 0;

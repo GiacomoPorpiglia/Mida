@@ -1,10 +1,6 @@
 #include "move_ordering.h"
 #include <stdint.h>
 #include <bits/stdc++.h>
-#include "constants.h"
-#include "game_constants.h"
-#include "bitboard.h"
-#include "board_declaration.h"
 #include "see.h"
 
 const int mvv_lva[6][6] = {

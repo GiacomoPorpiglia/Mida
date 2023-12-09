@@ -1,6 +1,4 @@
 #include "bitboard.h"
-#include "constants.h"
-#include "board_declaration.h"
 #include <stdint.h>
 #include <vector>
 #include <string>

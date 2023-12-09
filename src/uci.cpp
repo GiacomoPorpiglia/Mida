@@ -2,10 +2,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
-#include "make_move.h"
-#include "perft.h"
-#include "hashing.h"
-#include "search.h"
 #include "game_constants.h"
 #ifdef _WIN32
 #include <windows.h>

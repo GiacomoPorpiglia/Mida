@@ -1,14 +1,7 @@
 #include "search.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "constants.h"
-#include "game_constants.h"
-#include "hashing.h"
-#include "board_declaration.h"
-#include "evaluate.h"
-#include "move_ordering.h"
 #include "bitboard.h"
-#include "uci.h"
 #include <cmath>
 #include "see.h"
 

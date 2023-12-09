@@ -3,12 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "constants.h"
-#include "bitboard.h"
 #include "board_declaration.h"
 #include "magic_bitboards.h"
 #include "nnue_eval.h"
-#include "nnue.h"
 #include "game_constants.h"
 
 
