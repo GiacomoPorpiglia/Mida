@@ -71,6 +71,6 @@ static inline int scoreMove(MOVE move);
 
 extern MOVE tempMove;
 extern int tempScore, current_move, next_move, max_score, h, i, j, x, y;
-void sortMoves(movesList *moveList, MOVE best_move);
+void scoreMoves(movesList *moveList, MOVE best_move);
 void pickNextMove(movesList *moveList, int moveNum);
 #endif

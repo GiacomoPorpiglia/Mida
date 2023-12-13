@@ -169,7 +169,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     board.calculateMoves(board.colorToMove, moveList);
 
     // sort moves
-    sortMoves(moveList, 0);
+    scoreMoves(moveList, 0);
     MOVE move;
     int playedCount = 0; //counter of played moves
 
@@ -447,7 +447,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
         enable_pv_scoring(moveList);
 
     // sort moves
-    sortMoves(moveList, best_move);
+    scoreMoves(moveList, best_move);
 
     if (isInsufficientMaterial())
         return 0;
