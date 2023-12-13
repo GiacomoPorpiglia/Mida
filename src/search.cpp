@@ -169,7 +169,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     board.calculateMoves(board.colorToMove, moveList);
 
     // sort moves
-    scoreMoves(moveList, 0);
+    scoreMoves(moveList, best_move);
     MOVE move;
     int playedCount = 0; //counter of played moves
 

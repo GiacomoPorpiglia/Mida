@@ -143,7 +143,7 @@ void pickNextMove(movesList *moveList, int moveNum)
     moveList->move_scores[bestnum] = tempScore;
 }
 
-/* give a score to every move, whichc will then be used to decide what moves to search first
+/* give a score to every move, which will then be used to decide what moves to search first
    a previous implementation sorted all the moves after scoring them, while now they are picked
    one by one ( by the pickNextMove function ) whenever we need a new move to search: this approach is faster the more you cut, because
    you will need to pick a small number of moves compared to all the moves of the position
