@@ -19,7 +19,7 @@ Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for 
 
 | Version  | [CCRL 40/15](https://computerchess.org.uk/ccrl/4040/) | [CCRL Blitz](https://computerchess.org.uk/ccrl/404/) |
 | -------- | ---------- | ---------- |
-| 2.2      |    3091    |    3090    |
+| 2.2      |    3088    |    3088    |
 | 2.1      |    2941    |     /      |
 | 2.0      | / (~2600)  | / (~2600)  |
 | 1.2.1    |      /     |    2360    |
