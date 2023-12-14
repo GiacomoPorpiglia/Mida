@@ -439,7 +439,7 @@ static inline void parse_go(char *command)
 
 void uci_loop()
 {
-    setbuf(stdin, NULL);
+    //setbuf(stdin, NULL);
     setbuf(stdout, NULL);
 
     char input[2000];
