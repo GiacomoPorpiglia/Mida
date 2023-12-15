@@ -16,7 +16,7 @@
 
 void init_all() {
 
-    nnue_export_net();
+    //nnue_export_net();
     init_hash_table();
     init_random_keys();
     init_sliders_attacks(bishop);
