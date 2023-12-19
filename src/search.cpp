@@ -371,8 +371,11 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 return 0;
 
             // fail-hard beta cutoff
-            if (evaluation >= beta)
+            if (evaluation >= beta) {
+                //if we find a mate, we can't return it because it might not be true. We return beta instead
+                if(evaluation >= MATE_SCORE) evaluation = beta;
                 return evaluation;
+            }
             
         }
 
@@ -483,7 +486,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 continue;
             
 
-            if (!is_root && !in_check && is_quiet) {
+            if (!is_root && !in_check && is_quiet && alpha > -MATE_SCORE) {
                 
                 /*
                 Late move pruning (LMP)
