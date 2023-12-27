@@ -675,6 +675,17 @@ static inline void printMove(MOVE move)
 void printPV(int len, int cnt, uint16_t* pv) {
     if(cnt == len) return;
 
+    movesList legalMoves;
+    board.calculateMoves(board.colorToMove, &legalMoves);
+    bool moveIsLegal = false;
+    for(int i = 0; i < legalMoves.count; i++) {
+        if(pv[cnt] == legalMoves.moves[i]) {
+            moveIsLegal = true;
+            break;
+        }
+    }
+    if(!moveIsLegal) return;
+
     uint64_t hash_key_copy = hash_key;
     int oldPieceType = board.allPieces[getSquareFrom(pv[cnt])];
     int capturedPieceType = board.allPieces[getSquareTo(pv[cnt])];
