@@ -23,8 +23,7 @@ int LMP_table[2][8];
 int LMRBase = 75;
 int LMRDivision = 300;
 
-void initSearch()
-{
+void initSearch() {
     //Init LMR table
     float base = LMRBase / 100.0f;
     float division = LMRDivision / 100.0f;
@@ -40,8 +39,7 @@ void initSearch()
     }
 }
 
-static inline int relativeSquare(int sq)
-{
+static inline int relativeSquare(int sq) {
     return board.colorToMove ? sq : FLIP(sq);
 }
 
@@ -96,8 +94,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     dp->from[0] = from;
     dp->to[0]   = to;
     // promotion
-    if (isPromotion(move))
-    {
+    if (isPromotion(move)) {
         dp->to[0]             = 64; // pawn to SQ_NONE, promoted piece from SQ_NONE
         dp->pc[dp->dirtyNum]  = board.colorToMove==WHITE ? (newPieceType + 1) : (newPieceType+7);
         dp->from[dp->dirtyNum] = 64;
@@ -108,8 +105,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
 
 
 
-static inline bool repetitionDetection()
-{
+static inline bool repetitionDetection() {
     // loop over repetitions positions
     for (int i = 0; i < repetition_index; i++)
         if (repetition_table[i] == hash_key)
@@ -119,8 +115,7 @@ static inline bool repetitionDetection()
     return false;
 }
 
-static inline int quiescence(int alpha, int beta, SearchStack *ss)
-{
+static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     int best_score = -MATE_VALUE;
     int standing_pat, evaluation;
     MOVE best_move;
@@ -147,14 +142,14 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     //Delta pruning
     if(standing_pat < alpha-pieceValues[Q]) return alpha;
 
-    if (standing_pat > alpha)
-    {
+    if (standing_pat > alpha) {
         if (standing_pat >= beta)
             return beta;
         alpha = standing_pat;
     }
     
     tt* ttEntry = readHashEntry(best_move);
+
     if (ttEntry!=nullptr && !pv_node) {
         evaluation = ttEntry->eval;
         if ((ttEntry->flag == HASH_FLAG_EXACT ||
@@ -176,14 +171,12 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
     best_score = standing_pat;
     best_move = NULL_MOVE; 
 
-    for (int moveCount = 0; moveCount < moveList->count; moveCount++)
-    {
+    for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
         pickNextMove(moveList, moveCount);
         move = moveList->moves[moveCount];
         
         // only look at captures and promotions
-        if (isCapture(move) || isEnPassant(move) || isPromotion(move))
-        {
+        if (isCapture(move) || isEnPassant(move) || isPromotion(move)) {
             /*
             In quiescence, we can skip captures evaluated as losing by SEE with confidence that they will not result in a better position
             */
@@ -238,19 +231,16 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss)
 }
 
 
-static inline bool isInsufficientMaterial()
-{
+static inline bool isInsufficientMaterial() {
     return ((board.whitePiecesValue <= pieceValues[B]) && (board.blackPiecesValue <= pieceValues[B]) && !pieces_bb[WHITE][P] && !pieces_bb[BLACK][P]);
 }
 
-static inline uint64_t nonPawnMat(int side)
-{
+static inline uint64_t nonPawnMat(int side) {
     return (pieces_bb[side][Q] | pieces_bb[side][R] | pieces_bb[side][B] | pieces_bb[side][N]);
 }
 
 
-static inline int search(int depth, int alpha, int beta, SearchStack* ss)
-{
+static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     int evaluation, static_eval=0;
 
@@ -388,11 +378,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
             int new_eval;
 
             // static evaluation indicates a fail-low node
-            if (evaluation < beta)
-            {
+            if (evaluation < beta) {
                 // on depth 1
-                if (depth == 1)
-                {
+                if (depth == 1) {
                     // get quiscence score
                     new_eval = quiescence(alpha, beta, ss);
                     // return quiescence score if it's greater then static evaluation score
@@ -402,8 +390,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 // add second bonus to static evaluation
                 evaluation += 175;
                 // static evaluation indicates a fail-low node
-                if ((evaluation < beta) && (depth <= 2))
-                {
+                if ((evaluation < beta) && (depth <= 2)) {
                     // get quiscence score
                     new_eval = quiescence(alpha, beta, ss);
 
@@ -425,8 +412,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     than the current mate found.
     */
     int matingValue = MATE_VALUE - ply;
-    if (matingValue < beta)
-    {
+    if (matingValue < beta) {
         beta = matingValue;
         if (alpha >= matingValue) return matingValue; // Beta cutoff
     }
@@ -437,8 +423,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     }
     
     //if no moves are availble, it's either checkmate or stalemate
-    if (moveList->count == 0)
-    {
+    if (moveList->count == 0) {
         if (in_check)
             return -MATE_VALUE + ply; // checkmate
         return 0;                     // stalemate
@@ -455,16 +440,14 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     if (isInsufficientMaterial())
         return 0;
 
-    else
-    {
+    else {
         MOVE move;
         int quietMoveCount=0;
         bool skip_quiet_moves = false;
 
         movesList quietList;
 
-        for (int moveCount = 0; moveCount < moveList->count; moveCount++)
-        {
+        for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
             pickNextMove(moveList, moveCount);
             move = moveList->moves[moveCount];
 
@@ -548,11 +531,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
 
             // Late move reduction (LMR)
-            else
-            {
+            else {
                 // condition to consider late move reduction (LMR)
-                if ((moveCount >= 4) && (depth >= 3) && is_ok_to_reduce)
-                {
+                if ((moveCount >= 4) && (depth >= 3) && is_ok_to_reduce) {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
                     R += !pv_node; // increase reduction if we it's not a pv-node
@@ -578,8 +559,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                     evaluation = alpha + 1;
 
                 // Principle variation search (PVS)
-                if (evaluation > alpha)
-                {
+                if (evaluation > alpha) {
                     //  https://web.archive.org/web/20071030220825/http://www.brucemo.com/compchess/programming/pvs.htm
                     //  principle variation search optimization
                     /*  Once you've found a move with a score that is between alpha and beta,
@@ -608,8 +588,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 return 0;
 
 
-            if (evaluation > alpha)
-            {
+            if (evaluation > alpha) {
                 // switch hahs flag to the one storing score for PV node
                 hash_f = HASH_FLAG_EXACT;
 
@@ -628,14 +607,12 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
                 // adjust PV length
                 pv_length[ply] = pv_length[ply + 1];
 
-                if (evaluation >= beta)
-                {
+                if (evaluation >= beta) {
                     // store hash entry
                     writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
                     // update killer and history moves (only if it's a quiet move)
-                    if (is_quiet)
-                    {
+                    if (is_quiet) {
                         // update killer moves
                         updateKillers(move);
                         //update history score
@@ -653,13 +630,11 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss)
     return alpha;
 }
 
-static inline void printMove(MOVE move)
-{
+static inline void printMove(MOVE move) {
     printf("%s", coordFromPosition[getSquareFrom(move)]); 
     printf("%s", coordFromPosition[getSquareTo(move)]);
     // in case of promotion
-    if (isPromotion(move))
-    {
+    if (isPromotion(move)) {
         if (getNewPieceType(move) == Q)
             printf("q");
         else if (getNewPieceType(move) == R)
@@ -699,8 +674,7 @@ void printPV(int len, int cnt, uint16_t* pv) {
     unplayMove(pv[cnt], oldPieceType, oldSpecs, capturedPieceType);
 }
 
-void search_position(int maxDepth)
-{
+void search_position(int maxDepth) {
     int evaluation = 0;
     
     nodes = 0; //reset nodes counter
@@ -722,8 +696,7 @@ void search_position(int maxDepth)
     int delta = 25;
 
     // iterative deepening
-    for (int curr_depth = 1; curr_depth <= maxDepth; curr_depth++)
-    {
+    for (int curr_depth = 1; curr_depth <= maxDepth; curr_depth++) {
         ply = 0;
         //reset computed accumulations
         for(int i = 0; i < max_ply+1; i++)
@@ -765,8 +738,8 @@ void search_position(int maxDepth)
         delta = 25; // reset aspiration window size
 
         // if PV is available
-        if (pv_length[0])
-        {
+        if (pv_length[0]) {
+            
             int nps = static_cast<int>(1000.0f * nodes / (get_time_ms() - starttime));
             nps = nps < 0 ? 0 : nps;
             // print search info
