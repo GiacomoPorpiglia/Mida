@@ -21,18 +21,16 @@ int score_pv = 0;
 int count = 0;
 
 
-void enable_pv_scoring(movesList *moveList)
-{
+void enable_pv_scoring(movesList *moveList) {
     // disable following PV
     follow_pv = 0;
 
     // loop over moves in the move list
-    for (int count = 0; count < moveList->count; count++)
-    {
+    for (int count = 0; count < moveList->count; count++) {
+
         MOVE move = moveList->moves[count];
         // if we hit PV move
-        if (move == pv_table[0][ply])
-        {
+        if (move == pv_table[0][ply]) {
             score_pv = 1;
             // enable  following PV
             follow_pv = 1;
@@ -52,14 +50,13 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
     int bonus = std::min(2100, 300 * depth - 300);
     
 
-    if (depth > 2)
-    {
+    if (depth > 2) {
         int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)];
         *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
     }
 
-    for (int i = 0; i < quietMoveCount; i++)
-    {
+    for (int i = 0; i < quietMoveCount; i++) {
+        
         MOVE quiet_move = quietList->moves[i];
         if (quiet_move == best_move)
             continue;
@@ -70,14 +67,11 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
 }
 
 
-static inline int scoreMove(MOVE move)
-{
+static inline int scoreMove(MOVE move) {
     // if PV move scoring is allowed
-    if (score_pv)
-    {
+    if (score_pv) {
         // if we are scoring PV move
-        if (pv_table[0][ply] == move)
-        {
+        if (pv_table[0][ply] == move) {
             // disable score PV flag
             score_pv = 0;
             // score PV move giving it the highest score to search it first
@@ -102,8 +96,7 @@ static inline int scoreMove(MOVE move)
     }
 
     // score quiet move
-    else
-    {
+    else {
         // score 1st killer move
         if (killer_moves[0][ply] == move)
             return firstKillerScore;
@@ -120,8 +113,7 @@ static inline int scoreMove(MOVE move)
 MOVE tempMove;
 int tempScore, current_move, next_move, max_score, h, i, j, x, y;
 
-void pickNextMove(movesList *moveList, int moveNum)
-{
+void pickNextMove(movesList *moveList, int moveNum) {
     MOVE temp;
     int index;
     int bestscore = -inf;
@@ -148,12 +140,10 @@ void pickNextMove(movesList *moveList, int moveNum)
    one by one ( by the pickNextMove function ) whenever we need a new move to search: this approach is faster the more you cut, because
    you will need to pick a small number of moves compared to all the moves of the position
 */
-void scoreMoves(movesList *moveList, MOVE best_move)
-{
+void scoreMoves(movesList *moveList, MOVE best_move) {
     MOVE move;
     
-    for (int count = 0; count < moveList->count; count++)
-    {
+    for (int count = 0; count < moveList->count; count++) {
         move = moveList->moves[count];
         if(best_move == move) 
             moveList->move_scores[count] = bestMoveScore;

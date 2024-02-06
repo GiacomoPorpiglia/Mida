@@ -260,15 +260,17 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     bool pv_node = (beta - alpha) > 1;
     bool is_root = (ply==0);
-    // read hash entry
 
+
+    // read hash entry
     tt* ttEntry = readHashEntry(best_move);
+
     if (ttEntry!=nullptr && ply && !pv_node) {
         static_eval = ttEntry->eval;
         if (ttEntry->depth >= depth &&
             (ttEntry->flag == HASH_FLAG_EXACT ||
             (ttEntry->flag == HASH_FLAG_ALPHA && ttEntry->eval <= alpha) ||
-            (ttEntry->flag == HASH_FLAG_BETA && ttEntry->eval >= beta)))
+            (ttEntry->flag == HASH_FLAG_BETA  && ttEntry->eval >= beta)))
             return static_eval;
     }
 
