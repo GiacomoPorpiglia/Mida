@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "bitboard.h"
+#include "constants.h"
 #include <cmath>
 #include "see.h"
 
@@ -693,7 +694,7 @@ void search_position(int maxDepth) {
     int alpha = -inf;
     int beta = inf;
 
-    int delta = 25;
+    int delta = ASPIRATION_WINDOW_MAX;
 
     // iterative deepening
     for (int curr_depth = 1; curr_depth <= maxDepth; curr_depth++) {
@@ -735,11 +736,11 @@ void search_position(int maxDepth) {
             continue;
         }
 
-        delta = 25; // reset aspiration window size
+        delta = ASPIRATION_WINDOW_MAX; // reset aspiration window size
 
         // if PV is available
         if (pv_length[0]) {
-            
+
             int nps = static_cast<int>(1000.0f * nodes / (get_time_ms() - starttime));
             nps = nps < 0 ? 0 : nps;
             // print search info
@@ -755,14 +756,6 @@ void search_position(int maxDepth) {
             
             printPV(pv_length[0], 0, &(pv_table[0][0]));
 
-            // loop over the moves within a PV line
-            /*for (int count = 0; count < pv_length[0]; count++)
-            {
-                // print PV move
-                printMove(pv_table[0][count]);
-                printf(" ");
-            }
-            */
             // print new line
             printf("\n");
         }

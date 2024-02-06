@@ -12,6 +12,8 @@
 #define HASH_FLAG_ALPHA 1
 #define HASH_FLAG_BETA 2
 
+#define ASPIRATION_WINDOW_MAX 25
+
 // bounds for the range of mating scores
 // [-infinity, -mate_value ... -mate_score, normal_scores, ...mate_score, ...mate value, infinity]
 #define MATE_SCORE 48000
