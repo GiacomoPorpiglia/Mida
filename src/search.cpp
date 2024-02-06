@@ -372,38 +372,42 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             
         }
 
-      
-        //razoring (inspired from Strelka)
-        if(depth <= 2) {
-            // add first bonus
-            evaluation = static_eval + 125;
-            // define new score
-            int new_eval;
 
-            // static evaluation indicates a fail-low node
-            if (evaluation < beta) {
-                // on depth 1
-                if (depth == 1) {
-                    // get quiscence score
-                    new_eval = quiescence(alpha, beta, ss);
-                    // return quiescence score if it's greater then static evaluation score
-
-                    return (new_eval > evaluation) ? new_eval : evaluation;
-                }
-                // add second bonus to static evaluation
-                evaluation += 175;
-                // static evaluation indicates a fail-low node
-                if ((evaluation < beta) && (depth <= 2)) {
-                    // get quiscence score
-                    new_eval = quiescence(alpha, beta, ss);
-
-                    // quiescence score indicates fail-low node
-                    if (new_eval < beta)
-                        // return quiescence score if it's greater then static evaluation score
-                        return (new_eval > evaluation) ? new_eval : evaluation;
-                }
-            }
+        if(depth <= 2 && static_eval + 180*depth <= alpha) {
+            return quiescence(alpha, beta, ss);
         }
+      
+        // //razoring (inspired from Strelka)
+        // if(depth <= 2) {
+        //     // add first bonus
+        //     evaluation = static_eval + 125;
+        //     // define new score
+        //     int new_eval;
+
+        //     // static evaluation indicates a fail-low node
+        //     if (evaluation < beta) {
+        //         // on depth 1
+        //         if (depth == 1) {
+        //             // get quiscence score
+        //             new_eval = quiescence(alpha, beta, ss);
+        //             // return quiescence score if it's greater then static evaluation score
+
+        //             return (new_eval > evaluation) ? new_eval : evaluation;
+        //         }
+        //         // add second bonus to static evaluation
+        //         evaluation += 175;
+        //         // static evaluation indicates a fail-low node
+        //         if ((evaluation < beta) && (depth <= 2)) {
+        //             // get quiscence score
+        //             new_eval = quiescence(alpha, beta, ss);
+
+        //             // quiescence score indicates fail-low node
+        //             if (new_eval < beta)
+        //                 // return quiescence score if it's greater then static evaluation score
+        //                 return (new_eval > evaluation) ? new_eval : evaluation;
+        //         }
+        //     }
+        // }
     }
 
 
@@ -456,9 +460,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
             bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || (moveList->move_scores[moveCount] == secondKillerScore);
 
-            int oldPieceType = board.allPieces[getSquareFrom(move)];
+            int oldPieceType      = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
-            uint16_t oldSpecs = board.boardSpecs;
+            uint16_t oldSpecs     = board.boardSpecs;
             
             bool is_ok_to_reduce = !in_check && !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
 
