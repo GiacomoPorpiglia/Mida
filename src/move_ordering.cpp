@@ -126,7 +126,7 @@ void pickNextMove(movesList *moveList, int moveNum) {
     for (index = moveNum; index < moveList->count; index++) {
         if (moveList->move_scores[index] > bestscore) {
             bestscore = moveList->move_scores[index];
-            bestnum = index;
+            bestnum   = index;
         }
     }
 

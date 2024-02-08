@@ -1,6 +1,5 @@
 #include "constants.h"
 
-// 0, 1230, 620, 420, 410, 100
 const int pieceValues[6] = {0, 1120, 605, 410, 400, 100};
 
 uint64_t pieces_bb[2][7];
