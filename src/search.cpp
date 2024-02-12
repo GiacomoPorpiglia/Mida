@@ -140,7 +140,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     standing_pat = evaluate<true>();
 
     ss->static_eval = standing_pat;
-    
+
     //Delta pruning
     if(standing_pat < alpha-pieceValues[Q]) return alpha;
 
@@ -269,8 +269,14 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     // read hash entry
     tt* ttEntry = readHashEntry(best_move);
+    bool ttHit = (ttEntry != nullptr);
 
-    if (ttEntry!=nullptr && ply && !pv_node) {
+    MOVE excluded_move = ss->excluded_move;
+
+    if(excluded_move != NULL_MOVE) ttHit = false;
+
+    if (ttHit && ply && !pv_node) {
+        ttHit = true;
         static_eval = ttEntry->eval;
         if (ttEntry->depth >= depth &&
             (ttEntry->flag == HASH_FLAG_EXACT ||
@@ -318,7 +324,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
-    if(!pv_node && !in_check && !is_root) {
+    if(!pv_node && !in_check && !is_root && !excluded_move) {
 
         //reverse futility pruning
         
@@ -433,6 +439,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             pickNextMove(moveList, moveCount);
             move = moveList->moves[moveCount];
 
+            if (move == ss->excluded_move)
+                continue;
+
             bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || (moveList->move_scores[moveCount] == secondKillerScore);
 
             int oldPieceType      = board.allPieces[getSquareFrom(move)];
@@ -491,6 +500,56 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             }
 
 
+
+            //Singular extension
+
+            int extension = 0;
+            if(!is_root && ttHit && ttEntry->best_move == move && ttEntry->flag == HASH_FLAG_BETA && depth >= (6 + pv_node) && (ttEntry->depth >= depth - 3) && std::abs(ttEntry->eval) < MATE_SCORE) {
+                
+                int singular_beta  = ttEntry->eval - depth;
+                
+                //If we are in a situation where we had a ttHit with BETA FLAG, but the depth wasn't enough to return the value, we can use this info to say that probably we will still fail high.
+                //So we do a reduced-depth search STAYING at this level, meaning researching this current position,
+                //and if it fails high, we return singular_beta, pruning the tree (multicut)
+                //if we don't fail high, we may want to extend the search, because it's an uncertain position
+                ss->excluded_move = move;
+
+                int singular_score = search((depth-1) / 2, singular_beta-1, singular_beta, ss);
+
+                ss->excluded_move = NULL_MOVE;
+
+                //if no move fails high, the current move s singular, and we extend the search
+                if(singular_score < singular_beta) {
+                    extension = 1;
+                }
+
+                //if all other moves fail high, cut
+                else if(singular_beta >= beta) return singular_beta; // multicut
+
+                /* 
+                    if we didn't prove every move fails high,
+                    but our stored eval is yet greater than beta,
+                    we are pretty sure that no move in this subtree
+                    is great, so we can search to a lower depth
+                */
+                else if(ttEntry->eval >= beta) extension = -2 + pv_node;
+
+                /*
+                    if we didn't prove every move fails high,
+                    but our stored eval is yet greater than beta,
+                    but lower than the score returned by the null-window search,
+                    it means that maybe the eval stored in the TT wasn't so accurate.
+                    Therefore, we still trust it, but we reduce the depth of the search
+                    in this subtree only by one (so not a lot, because the situation is 
+                    more uncertain)
+                */
+                else if(ttEntry->eval <= singular_score) extension = -1;
+
+            }
+
+            int newDepth = depth + extension;
+
+
             // Copy the hash key to restore it after the search, together with unplay move
             uint64_t hash_key_copy = hash_key;
             fillDirtyPiece(ply+1, move);
@@ -512,7 +571,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
             // full depth search
             if (moveCount == 0)
-                evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
+                evaluation = -search(newDepth - 1, -beta, -alpha, ss + 1);
 
             // Late move reduction (LMR)
             else {
@@ -533,9 +592,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
                     
-                    R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
+                    R = std::min(newDepth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
-                    evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
+                    evaluation = -search(newDepth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
                 }
 
                 else
@@ -550,7 +609,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         the rest of the moves are searched with the goal of proving that they are all bad.
                         It's possible to do this a bit faster than a search that worries that one
                         of the remaining moves might be good. */
-                    evaluation = -search(depth - 1, -alpha - 1, -alpha, ss + 1);
+                    evaluation = -search(newDepth - 1, -alpha - 1, -alpha, ss + 1);
                     /*  If the algorithm finds out that it was wrong, and that one of the
                         subsequent moves was better than the first PV move, it has to search again,
                         in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
@@ -558,7 +617,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         "bad move proof" search referred to earlier. */
                     if ((evaluation > alpha) && (evaluation < beta))
                         // research the move  that has failed to be proved to be bad
-                        evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
+                        evaluation = -search(newDepth - 1, -beta, -alpha, ss + 1);
                 }
             }
 
@@ -593,7 +652,8 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
                 if (evaluation >= beta) {
                     // store hash entry
-                    writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
+                    if(excluded_move==NULL_MOVE)
+                        writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
                     // update killer and history moves (only if it's a quiet move)
                     if (is_quiet) {
