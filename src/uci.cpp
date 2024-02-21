@@ -346,8 +346,10 @@ static inline void parse_go(char *command)
         auto start = chrono::steady_clock::now();
         int totalMoves = perft(depth, depth);
         auto end = chrono::steady_clock::now();
+        auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         printf("Total nodes: %d\n", totalMoves);
-        printf("Time (ms): %d\n", chrono::duration_cast<chrono::milliseconds>(end - start).count());
+        printf("Time (ms): %d\n", time);
+        printf("NPS: %.2f M\n", (float)(totalMoves)/(time*1000));
         clearTranspositionTable();
     }
     else

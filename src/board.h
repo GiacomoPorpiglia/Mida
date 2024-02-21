@@ -119,6 +119,7 @@ private:
     bool isEnPassantPinned(int enPassantCapturePos, int piecePos, uint64_t opponentBitboards[6]);
     void addMoves(int squareFrom, uint64_t bb, int pieceType, movesList *moveList);
     void calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], int isInCheckByPawn, movesList *moveList);
+    bool inCheckWithOccupancies(uint64_t whiteOccupancy, uint64_t blackOccupancy);
 };
 
 inline uint64_t Board::get_occupancy()

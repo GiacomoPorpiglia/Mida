@@ -417,6 +417,13 @@ void Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
 
     uint64_t movesFromKing = 0ULL;
 
+    uint64_t bishop_att = 0ULL;
+    uint64_t rook_att   = 0ULL;
+    if(opponentBitboards[B] | opponentBitboards[Q])
+        bishop_att = get_bishop_attacks(kingPos, occupancy);
+    if(opponentBitboards[R] | opponentBitboards[Q])
+        rook_att   =   get_rook_attacks(kingPos, occupancy);
+
     for(int piece = Q; piece <= P; piece++) {
         bb_copy = opponentBitboards[piece];
         
@@ -426,16 +433,16 @@ void Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
             {
 
             case Q:
-                movesFromKing = get_rook_attacks(kingPos, occupancy) | get_bishop_attacks(kingPos, occupancy);
+                movesFromKing = rook_att | bishop_att;
                 if (get_bit(movesFromKing & opponentBitboards[Q], square))
                     set_bit(checkers_bb, square);
             case R:
-                movesFromKing = get_rook_attacks(kingPos, occupancy);
+                movesFromKing = rook_att;
                 if(get_bit(movesFromKing & opponentBitboards[R], square))
                     set_bit(checkers_bb, square);
                 break;
             case B:
-                movesFromKing = get_bishop_attacks(kingPos, occupancy);
+                movesFromKing = bishop_att;
                 if (get_bit(movesFromKing & opponentBitboards[B], square))
                     set_bit(checkers_bb, square);
                 break;
@@ -502,7 +509,7 @@ void Board::calculateAttackedSquares(uint64_t opponentBitboards[6]) {
                 // pawn attacked squares
 
                 //if white to move
-                if (colorToMove)
+                if (colorToMove==WHITE)
                     attackedSquares |= ((opponentBitboards[P] >> 7) & ~A_FILE) | ((opponentBitboards[P] >> 9) & ~H_FILE);
                 else 
                     attackedSquares |= ((opponentBitboards[P] << 7) & ~H_FILE) | ((opponentBitboards[P] << 9) & ~A_FILE);
@@ -566,55 +573,25 @@ void Board::calculatePinnedPieces(uint64_t opponentBitboards[6], uint64_t colorT
     }
 }
 
+
 bool Board::isEnPassantPinned(int enPassantCapturePos, int piecePos, uint64_t opponentBitboards[6]) {
-    int kingRow = kingPos/8;
-    int kingCol = kingPos%8;
-    int pieceCol = piecePos%8;
-    int enPassantRow = enPassantCapturePos/8;
-    int enPassantCol = enPassantCapturePos%8;
-    if (colorToMove && kingRow != (enPassantRow - 1)) return false;
-    else if (!colorToMove && kingRow != (enPassantRow+1)) return false;
 
-    if (kingCol < enPassantCol) {
-        int startIdx = 0;
-        if (pieceCol > enPassantCol) {
-            startIdx = piecePos+1;
-            for(int idx=kingPos+1; idx < piecePos-1; idx++) {
-                if (get_bit(opponentOccupiedBB, idx) || get_bit(colorToMoveOccupiedBB, idx)) return false;
-            }
-        }
-        else {
-            startIdx = piecePos+2;
-            for(int idx = kingPos+1; idx < piecePos; idx++) {
-                if (get_bit(opponentOccupiedBB, idx) || get_bit(colorToMoveOccupiedBB, idx)) return false;
-            }
-        }
-        for (int idx = startIdx; idx < (kingRow+1)*8; idx++) {
-            if (get_bit(opponentOccupiedBB, idx) && (get_bit(opponentBitboards[Q], idx) || get_bit(opponentBitboards[R], idx))) return true;
-            else if (get_bit(colorToMoveOccupiedBB, idx) || get_bit(opponentOccupiedBB, idx)) return false;
-        }
-    }
-    else {
-        int startIdx = 0;
-        if(pieceCol > enPassantCol) {
-            startIdx = piecePos-2;
-            for(int idx = kingPos-1; idx>piecePos; idx--) {
-                if(get_bit(opponentOccupiedBB, idx) || get_bit(colorToMoveOccupiedBB, idx)) return false;
-            }
-        }
-        else {
-            startIdx = piecePos-1;
-            for(int idx=kingPos-1; idx > piecePos+1; idx--) {
-                if(get_bit(opponentOccupiedBB, idx) || get_bit(colorToMoveOccupiedBB, idx)) return false;
-            }
-        }
-        for(int idx = startIdx; idx > kingRow*8-1; idx--) {
-            if(get_bit(opponentOccupiedBB, idx) && (get_bit(opponentBitboards[Q], idx) || get_bit(opponentBitboards[R], idx))) return true;
-            else if (get_bit(colorToMoveOccupiedBB, idx) || get_bit(opponentOccupiedBB, idx)) return false;
-        }
+    int pieceCapturedPos = (colorToMove==WHITE) ? enPassantCapturePos - 8 : enPassantCapturePos + 8;
+
+    uint64_t white_occupancy = get_white_occupancy();
+    uint64_t black_occupancy = get_black_occupancy();
+    if(colorToMove==WHITE) {
+        pop_bit(white_occupancy, piecePos);
+        set_bit(white_occupancy, enPassantCapturePos);
+        pop_bit(black_occupancy, pieceCapturedPos);
+    } else {
+        pop_bit(black_occupancy, piecePos);
+        set_bit(black_occupancy, enPassantCapturePos);
+        pop_bit(white_occupancy, pieceCapturedPos);
 
     }
-    return false;
+    return inCheckWithOccupancies(white_occupancy, black_occupancy);
+
 }
 
 /*adds to moveList the new moves: the squareFrom is passed, and the squaresTo are the hot bits of bb, which is the bitboard that contains the moves(squaresTo as hot bits) for that piece
@@ -789,39 +766,39 @@ void Board::calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t oppon
                 tempMoves = knight_attacks[square] & ~colorToMoveOccupiedBB;
                 break;
             case P:
-            //if white to move
-            if (colorToMove) {
-                tempMoves = whitePawnPushMap(square, occupancy);
-                uint64_t attackMap = white_pawn_attacks[square];
-                tempMoves |= attackMap & opponentOccupiedBB;
-                int enPassantSquare = getEnPassantSquare(boardSpecs);
-                if (enPassantSquare != -1) {
-                    if (get_bit(attackMap, enPassantSquare) && !isEnPassantPinned(enPassantSquare, square, opponentBitboards)) {
-                        set_bit(tempMoves, enPassantSquare);
+                //if white to move
+                if (colorToMove==WHITE) {
+                    tempMoves = whitePawnPushMap(square, occupancy);
+                    uint64_t attackMap = white_pawn_attacks[square];
+                    tempMoves |= attackMap & opponentOccupiedBB;
+                    int enPassantSquare = getEnPassantSquare(boardSpecs);
+                    if (enPassantSquare != -1) {
+                        if (get_bit(attackMap, enPassantSquare) && !isEnPassantPinned(enPassantSquare, square, opponentBitboards)) {
+                            set_bit(tempMoves, enPassantSquare);
+                        }
+                        if (enPassantSquare == (isInCheckByPawn + 8) && get_bit(attackMap, enPassantSquare))
+                        {
+                            set_bit(take_pawn_checker_ep, enPassantSquare);
+                        }
                     }
-                    if (enPassantSquare == (isInCheckByPawn + 8) && get_bit(attackMap, enPassantSquare))
-                    {
-                        set_bit(take_pawn_checker_ep, enPassantSquare);
-                    }
+                    
                 }
-                
-            }
-            else {
-                tempMoves = blackPawnPushMap(square, occupancy);
-                uint64_t attackMap = black_pawn_attacks[square];
-                tempMoves |= attackMap & opponentOccupiedBB;
-                int enPassantSquare = getEnPassantSquare(boardSpecs);
-                if (enPassantSquare != -1) {
-                    if (get_bit(attackMap, enPassantSquare) && !isEnPassantPinned(enPassantSquare, square, opponentBitboards)) {
-                        set_bit(tempMoves, enPassantSquare);
+                else {
+                    tempMoves = blackPawnPushMap(square, occupancy);
+                    uint64_t attackMap = black_pawn_attacks[square];
+                    tempMoves |= attackMap & opponentOccupiedBB;
+                    int enPassantSquare = getEnPassantSquare(boardSpecs);
+                    if (enPassantSquare != -1) {
+                        if (get_bit(attackMap, enPassantSquare) && !isEnPassantPinned(enPassantSquare, square, opponentBitboards)) {
+                            set_bit(tempMoves, enPassantSquare);
+                        }
+                        if (enPassantSquare == (isInCheckByPawn - 8) && get_bit(attackMap, enPassantSquare)) {
+                            set_bit(take_pawn_checker_ep, enPassantSquare);
+                        }
                     }
-                    if (enPassantSquare == (isInCheckByPawn - 8) && get_bit(attackMap, enPassantSquare)) {
-                        set_bit(take_pawn_checker_ep, enPassantSquare);
-                    }
+                    
                 }
-                
-            }
-            break;
+                break;
 
             default:
                 break;
@@ -887,7 +864,32 @@ bool Board::inCheck() {
     return false;
 }
 
+bool Board::inCheckWithOccupancies(uint64_t whiteOccupancy, uint64_t blackOccupancy)
+{
 
+    int kingPos = bitScanForward(pieces_bb[colorToMove][K]);
+
+    uint64_t occupancy = whiteOccupancy | blackOccupancy;
+
+    uint64_t rook_attacks = get_rook_attacks(kingPos, occupancy);
+    if (rook_attacks & (pieces_bb[!colorToMove][R] | pieces_bb[!colorToMove][Q]))
+        return true;
+
+    uint64_t bishop_attacks = get_bishop_attacks(kingPos, occupancy);
+    if (bishop_attacks & (pieces_bb[!colorToMove][B] | pieces_bb[!colorToMove][Q]))
+        return true;
+
+    uint64_t knight_bb_copy = pieces_bb[!colorToMove][N];
+    while (knight_bb_copy)
+    {
+        if (get_bit(knight_attacks[pop_lsb(knight_bb_copy)], kingPos))
+            return true;
+    }
+    uint64_t pawn_attacks = colorToMove == WHITE ? white_pawn_attacks[kingPos] : black_pawn_attacks[kingPos];
+    if (pawn_attacks & pieces_bb[!colorToMove][P])
+        return true;
+    return false;
+}
 
 uint64_t Board::attackersForSide(int color, int sq, uint64_t occupancy) {
     uint64_t attackingBishops = pieces_bb[color][B];

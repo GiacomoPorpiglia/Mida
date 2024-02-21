@@ -532,7 +532,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     we are pretty sure that no move in this subtree
                     is great, so we can search to a lower depth
                 */
-                else if(ttEntry->eval >= beta) extension = -2 + pv_node;
+                else if(ttEntry->eval >= beta) extension = -2;
 
                 /*
                     if we didn't prove every move fails high,
@@ -592,9 +592,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
                     
-                    R = std::min(newDepth - 1, std::max(1, R)); // make sure we don't end up in quiescence
+                    R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
-                    evaluation = -search(newDepth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
+                    evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
                 }
 
                 else
