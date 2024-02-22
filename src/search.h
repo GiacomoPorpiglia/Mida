@@ -22,6 +22,7 @@ typedef struct {
     int static_eval{};
     MOVE move{};
     MOVE excluded_move{};
+    int double_extension{};
 } SearchStack;
 
 extern movesList mGen[max_ply];

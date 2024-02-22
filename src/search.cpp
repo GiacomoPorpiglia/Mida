@@ -321,6 +321,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss-2)->static_eval);
 
+    (ss + 1)->excluded_move = NULL_MOVE;
+    (ss)->double_extension  = !is_root ? (ss - 1)->double_extension : 0; 
+
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
@@ -521,6 +524,12 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 //if no move fails high, the current move s singular, and we extend the search
                 if(singular_score < singular_beta) {
                     extension = 1;
+
+                    //double extension in case move is very singular
+                    if(!pv_node && singular_score < singular_beta - 25 && ss->double_extension < 6) {
+                        extension = 2;
+                        ss->double_extension = (ss-1)->double_extension + 1;
+                    }
                 }
 
                 //if all other moves fail high, cut
