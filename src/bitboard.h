@@ -13,9 +13,11 @@
 #include <intrin.h>
 #endif
 
-#define get_bit(bitboard, square) (bitboard & (1ULL << square))
-#define set_bit(bitboard, square) (bitboard |= (1ULL << square))
-#define pop_bit(bitboard, square) (get_bit(bitboard, square) ? (bitboard ^= (1ULL << square)) : 0)
+
+#define Bit(square) (1ULL << (square))
+#define get_bit(bitboard, square) (bitboard & Bit(square))
+#define set_bit(bitboard, square) (bitboard |= Bit(square))
+#define pop_bit(bitboard, square) ((bitboard) &=  ~Bit(square));
 #define FLIP(sq) ((sq) ^ 56)
 
 #if defined(__GNUC__) // GCC, Clang, ICC
@@ -29,7 +31,7 @@ inline int bitScanForward(uint64_t bb)
 
 #elif defined(_MSC_VER) // MSVC
 
-inline int bitScanForward(uint64_t bb) {
+inline int bitScanForward(uint64_t& bb) {
     unsigned long idx;
     _BitScanForward64(&idx, bb);
     return (int)idx;

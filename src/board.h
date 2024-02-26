@@ -23,13 +23,21 @@ public:
     uint64_t AB_FILE = 217020518514230019;
     uint64_t GH_FILE = 13889313184910721216;
 
-    const int KING_OFFSETS[8] = {7, 8, 9, 1, -7, -8, -9, -1};
+    const int KING_OFFSETS[8]        = {7, 8, 9, 1, -7, -8, -9, -1};
     const uint64_t NOT_FILES_KING[8] = {H_FILE, 0, A_FILE, A_FILE, A_FILE, 0, H_FILE, H_FILE};
 
-    const int KNIGHT_OFFSETS[8] = {6, 15, 17, 10, -6, -15, -17, -10};
+    const int KNIGHT_OFFSETS[8]  = {6, 15, 17, 10, -6, -15, -17, -10};
     uint64_t NOT_FILES_KNIGHT[8] = {GH_FILE, H_FILE, A_FILE, AB_FILE, AB_FILE, A_FILE, H_FILE, GH_FILE};
 
-    CH allPieces[64] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+    CH allPieces[64] = {
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1, 
+        -1, -1, -1, -1, -1, -1, -1, -1};
 
     uint16_t boardSpecs = 0; // indices:  enPassant=0, whiteCastleKing=1, whiteCcastleQueen=2, blackCastleKing=3, blackCcastleQueen=4 values: 0 or 1 for everyone except en passant. en passant values: -1 if not allowed, square index if ep-capture allowed on that square
 
@@ -84,19 +92,27 @@ private:
     //bitboard of pinned pieces of the color to move
     uint64_t pinnedPiecesBB = 0ULL;
 
-    uint64_t squaresToTraverseForWhiteCastleKing = 96;
+    uint64_t squaresToTraverseForWhiteCastleKing  = 96;
     uint64_t squaresToTraverseForWhiteCastleQueen = 14;
 
-    uint64_t squaresToTraverseForBlackCastleKing = 6917529027641081856;
+    uint64_t squaresToTraverseForBlackCastleKing  = 6917529027641081856;
     uint64_t squaresToTraverseForBlackCastleQueen = 1008806316530991104;
 
     //array containing the masks for pinned pieces indexed by square. it doesn't need to be reset every time we have a new position, because we are only resetting pinnedPiecesBB, which has hot bits of the pinned pieces positions.
     //this way we won't risk accessing old masks, since we will only access masks of pieces pinned in the CURRENT position (the positions of these pieces are stored in pinnedPiecesBB)
-    uint64_t pinnedPiecesMask[64] = {0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL};
+    uint64_t pinnedPiecesMask[64] = {
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 
+        0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL, 0ULL};
 
-    uint64_t whiteCastleKingPath = 96;
+    uint64_t whiteCastleKingPath  = 96;
     uint64_t whiteCastleQueenPath = 14;
-    uint64_t blackCastleKingPath = 6917529027641081856;
+    uint64_t blackCastleKingPath  = 6917529027641081856;
     uint64_t blackCastleQueenPath = 1008806316530991104;
 
     int positionFromCoord(string coord);
@@ -119,21 +135,26 @@ private:
     bool isEnPassantPinned(int enPassantCapturePos, int piecePos, uint64_t opponentBitboards[6]);
     void addMoves(int squareFrom, uint64_t bb, int pieceType, movesList *moveList);
     void calculateLegalMoves(uint64_t colorToMoveBitboards[6], uint64_t opponentBitboards[6], int isInCheckByPawn, movesList *moveList);
-    bool inCheckWithOccupancies(uint64_t whiteOccupancy, uint64_t blackOccupancy);
+    bool inCheckWithOccupancies(uint64_t occupancy);
 };
 
 inline uint64_t Board::get_occupancy()
 {
-    return pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P] | pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
+    return  pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | 
+            pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P] | 
+            pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | 
+            pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
 }
 
 inline uint64_t Board::get_white_occupancy()
 {
-    return pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P];
+    return  pieces_bb[WHITE][K] | pieces_bb[WHITE][Q] | pieces_bb[WHITE][R] | 
+            pieces_bb[WHITE][B] | pieces_bb[WHITE][N] | pieces_bb[WHITE][P];
 }
 inline uint64_t Board::get_black_occupancy()
 {
-    return pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
+    return  pieces_bb[BLACK][K] | pieces_bb[BLACK][Q] | pieces_bb[BLACK][R] | 
+            pieces_bb[BLACK][B] | pieces_bb[BLACK][N] | pieces_bb[BLACK][P];
 }
 
 inline uint64_t Board::allAttackers(int sq, uint64_t occupancy)

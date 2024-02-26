@@ -21,8 +21,8 @@ SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][64];
 int LMP_table[2][8];
-int LMRBase = 75;
-int LMRDivision = 300;
+int LMRBase = 30;
+int LMRDivision = 220;
 
 void initSearch() {
     //Init LMR table
@@ -34,9 +34,11 @@ void initSearch() {
         }
     }
 
+    LMR_table[0][0] = LMR_table[1][0] =  LMR_table[0][1] = 0;
+
     for(int depth = 1; depth < 8; depth++) {
-        LMP_table[0][depth] = 2.5 + 2.5 * depth * depth / 4.5;
-        LMP_table[1][depth] = 4.0 + 4 * depth * depth / 4.5;
+        LMP_table[0][depth] = 1.5 + 2 * depth * depth / 4.5;
+        LMP_table[1][depth] = 2.5 +   4 * depth * depth / 4.5;
     }
 }
 
@@ -47,8 +49,8 @@ static inline int relativeSquare(int sq) {
 //populate the dirty piece for current ply in case of null move(from CFish)
 static inline void fillDirtyPieceNull(int ply) {
     DirtyPiece *dp = &(nn_stack[ply].dirtyPiece);
-    dp->dirtyNum=0;
-    dp->pc[0]=0;
+    dp->dirtyNum = 0;
+    dp->pc[0]    = 0;
 }
 
 // populate the dirty piece for current ply (from CFish NNUE implementation)
@@ -433,7 +435,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     else {
 
         MOVE move;
-        int quietMoveCount=0;
+        int  quietMoveCount=0;
         bool skip_quiet_moves = false;
 
         movesList quietList;
@@ -585,10 +587,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             // Late move reduction (LMR)
             else {
                 // condition to consider late move reduction (LMR)
-                if ((moveCount >= 3 + improving) && (depth >= 3) && is_ok_to_reduce) {
+                if ((moveCount >= 2 + improving) && (depth >= 2) && is_ok_to_reduce) {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
-                    R += !pv_node; // increase reduction if we it's not a pv-node
+                    R += !pv_node;   // increase reduction if we it's not a pv-node
                     R += !improving; // increase reduction if we are not improving
                     R += is_quiet && !see(move, -50 * depth);   // we increase the reduction if the move is quiet, because they are less likely to be the best move
 
@@ -601,9 +603,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
                     
-                    R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
+                    R = std::min(newDepth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
-                    evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
+                    evaluation = -search(newDepth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
                 }
 
                 else

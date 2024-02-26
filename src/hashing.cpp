@@ -112,7 +112,7 @@ tt* readHashEntry(MOVE &best_move) {
         if (hash_entry->eval < -MATE_SCORE)
             hash_entry->eval += ply;
 
-        if (hash_entry->eval > MATE_SCORE)
+        else if (hash_entry->eval > MATE_SCORE)
             hash_entry->eval -= ply;
 
         return hash_entry;
@@ -140,7 +140,7 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
     // store the score independent from path from root to current node,
     if (evaluation < -MATE_SCORE)
         evaluation -= ply;
-    if (evaluation > MATE_SCORE)
+    else if (evaluation > MATE_SCORE)
         evaluation += ply;
 
     hash_entry->depth = (uint8_t)depth;
