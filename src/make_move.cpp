@@ -5,8 +5,8 @@ int squareFrom = 0, squareTo = 0, newPieceType = 0, pieceType = 0;
 
 void playMove(MOVE move)
 {
-    squareFrom = getSquareFrom(move);
-    squareTo = getSquareTo(move);
+    squareFrom   = getSquareFrom(move);
+    squareTo     = getSquareTo(move);
     newPieceType = getNewPieceType(move);
 
     int capturedPieceType = board.allPieces[squareTo];
@@ -19,7 +19,6 @@ void playMove(MOVE move)
 
     if (board.colorToMove == WHITE)
     {
-
         pieceType = board.getWhitePieceTypeOnSquare(squareFrom); // board.whitePieces[squareFrom];
 
         // if the move isn't a capture or a pawn move, update the fifty move rule table
@@ -106,6 +105,7 @@ void playMove(MOVE move)
             hash_key ^= piece_keys[WHITE][pieceType][squareFrom];
             hash_key ^= piece_keys[WHITE][newPieceType][squareTo];
         }
+
         // if move is a capture, update opponent bitboards and hash key
         if (capturedPieceType != NOPIECE)
         {
@@ -240,7 +240,6 @@ void playMove(MOVE move)
         }
         if (capturedPieceType != NOPIECE)
         {
-
             hash_key ^= piece_keys[WHITE][capturedPieceType][squareTo];
 
             // board.whitePieces[squareTo]=-1;

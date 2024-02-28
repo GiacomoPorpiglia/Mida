@@ -20,9 +20,9 @@ movesList mGen[max_ply];
 SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][64];
-int LMP_table[2][8];
+int LMP_table[2][64];
 int LMRBase = 30;
-int LMRDivision = 220;
+int LMRDivision = 230;
 
 void initSearch() {
     //Init LMR table
@@ -36,9 +36,9 @@ void initSearch() {
 
     LMR_table[0][0] = LMR_table[1][0] =  LMR_table[0][1] = 0;
 
-    for(int depth = 1; depth < 8; depth++) {
-        LMP_table[0][depth] = 1.5 + 2 * depth * depth / 4.5;
-        LMP_table[1][depth] = 2.5 +   4 * depth * depth / 4.5;
+    for(int depth = 1; depth < 64; depth++) {
+        LMP_table[0][depth] = 1.5 +  0.4 * depth * depth;
+        LMP_table[1][depth] = 2.5 +  0.9 * depth * depth;
     }
 }
 
@@ -473,7 +473,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && depth <= 7 && quietMoveCount >= LMP_table[improving][depth]) {
+                if (!pv_node && !is_root && quietMoveCount >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
@@ -506,8 +506,8 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
 
 
-            //Singular extension
-
+            //Singular extensions and multicut
+            
             int extension = 0;
             if(!is_root && ttHit && ttEntry->best_move == move && ttEntry->flag == HASH_FLAG_BETA && depth >= (6 + pv_node) && (ttEntry->depth >= depth - 3) && std::abs(ttEntry->eval) < MATE_SCORE) {
                 
@@ -587,7 +587,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             // Late move reduction (LMR)
             else {
                 // condition to consider late move reduction (LMR)
-                if ((moveCount >= 2 + improving) && (depth >= 2) && is_ok_to_reduce) {
+                if ((moveCount >= 3 + improving) && (depth >= 3) && is_ok_to_reduce) {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
                     R += !pv_node;   // increase reduction if we it's not a pv-node

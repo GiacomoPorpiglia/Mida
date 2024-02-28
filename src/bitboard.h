@@ -136,9 +136,7 @@ static inline bool isPromotion(MOVE move)
 
 static inline bool isCastle(MOVE move)
 {
-    int from = getSquareFrom(move);
-    int to = getSquareTo(move);
-    return (getNewPieceType(move) == K && abs(from - to) == 2);
+    return (getNewPieceType(move) == K && abs(getSquareFrom(move) - getSquareTo(move)) == 2);
 }
 
 static inline bool isCapture(MOVE move)

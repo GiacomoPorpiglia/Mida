@@ -14,7 +14,7 @@
 extern int nodes;
 
 extern int LMR_table[max_ply][64];
-extern int LMP_table[2][8];
+extern int LMP_table[2][64];
 extern int LMRBase;
 extern int LMRDivision;
 
