@@ -447,13 +447,15 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             if (move == ss->excluded_move)
                 continue;
 
-            bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || (moveList->move_scores[moveCount] == secondKillerScore);
+            bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || 
+                                (moveList->move_scores[moveCount] == secondKillerScore);
 
             int oldPieceType      = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
             uint16_t oldSpecs     = board.boardSpecs;
             
-            bool is_ok_to_reduce = !in_check && !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
+            bool is_ok_to_reduce  = !in_check && 
+                                    !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
 
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
 

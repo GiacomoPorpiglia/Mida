@@ -13,8 +13,8 @@
 
 extern int nodes;
 
-extern int LMR_table[max_ply][64];
-extern int LMP_table[2][64];
+extern int LMR_table[max_ply][max_ply];
+extern int LMP_table[2][max_ply];
 extern int LMRBase;
 extern int LMRDivision;
 

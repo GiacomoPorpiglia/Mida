@@ -17,8 +17,7 @@ void playMove(MOVE move)
     // increment the game ply counter
     plyGameCounter++;
 
-    if (board.colorToMove == WHITE)
-    {
+    if (board.colorToMove == WHITE) {
         pieceType = board.getWhitePieceTypeOnSquare(squareFrom); // board.whitePieces[squareFrom];
 
         // if the move isn't a capture or a pawn move, update the fifty move rule table
@@ -38,8 +37,7 @@ void playMove(MOVE move)
         set_bit(pieces_bb[WHITE][newPieceType], squareTo);
 
         // en passant
-        if (pieceType == P && squareTo == getEnPassantSquare(board.boardSpecs))
-        {
+        if (pieceType == P && squareTo == getEnPassantSquare(board.boardSpecs)) {
             // update hash_key
             hash_key ^= piece_keys[WHITE][P][squareFrom];
             hash_key ^= piece_keys[WHITE][P][squareTo];
@@ -52,8 +50,7 @@ void playMove(MOVE move)
             board.allPieces[squareTo - 8] = NOPIECE;
         }
         // castle
-        else if (isCastle(move))
-        {
+        else if (isCastle(move)) {
 
             // update castling rights in hash key
             hash_key ^= castle_keys[generate_castle_key_index()];
@@ -66,8 +63,7 @@ void playMove(MOVE move)
             hash_key ^= castle_keys[generate_castle_key_index()];
 
             // kingside
-            if (squareTo - squareFrom == 2)
-            {
+            if (squareTo - squareFrom == 2) {
 
                 // update hash key
                 hash_key ^= piece_keys[WHITE][K][4];
@@ -82,8 +78,7 @@ void playMove(MOVE move)
                 board.allPieces[5] = R;
             }
             // queenside
-            else
-            {
+            else {
 
                 // update hash key
                 hash_key ^= piece_keys[WHITE][K][4];
@@ -99,40 +94,35 @@ void playMove(MOVE move)
             }
         }
         // if not castle and not en passant, just update the hash key
-        else
-        {
+        else {
             // update hash key
             hash_key ^= piece_keys[WHITE][pieceType][squareFrom];
             hash_key ^= piece_keys[WHITE][newPieceType][squareTo];
         }
 
         // if move is a capture, update opponent bitboards and hash key
-        if (capturedPieceType != NOPIECE)
-        {
+        if (capturedPieceType != NOPIECE) {
             // update hash key
             hash_key ^= piece_keys[BLACK][capturedPieceType][squareTo];
             // board.blackPieces[squareTo]=-1;
             pop_bit(pieces_bb[BLACK][capturedPieceType], squareTo);
         }
 
-        if (pieceType == K)
-        {
+        if (pieceType == K) {
             // update castling rights
             hash_key ^= castle_keys[generate_castle_key_index()];
             pop_bit(board.boardSpecs, 0);
             pop_bit(board.boardSpecs, 1);
             hash_key ^= castle_keys[generate_castle_key_index()];
         }
-        else if (pieceType == R)
-        {
-            if (squareFrom == 0)
-            {
+        else if (pieceType == R) {
+
+            if (squareFrom == 0) {
                 hash_key ^= castle_keys[generate_castle_key_index()];
                 pop_bit(board.boardSpecs, 1);
                 hash_key ^= castle_keys[generate_castle_key_index()];
             }
-            else if (squareFrom == 7)
-            {
+            else if (squareFrom == 7) {
                 hash_key ^= castle_keys[generate_castle_key_index()];
                 pop_bit(board.boardSpecs, 0);
                 hash_key ^= castle_keys[generate_castle_key_index()];
@@ -143,8 +133,7 @@ void playMove(MOVE move)
             hash_key ^= en_passant_keys[getEnPassantSquare(board.boardSpecs)];
 
         unsetEnPassantSquare(board.boardSpecs);
-        if (pieceType == P && ((squareTo - squareFrom) == 16))
-        {
+        if (pieceType == P && ((squareTo - squareFrom) == 16)) {
             hash_key ^= en_passant_keys[squareTo - 8];
             setEnPassantSquare(squareTo - 8, board.boardSpecs);
         }
