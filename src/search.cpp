@@ -19,8 +19,8 @@ movesList mGen[max_ply];
 
 SearchStack searchStack[max_ply + 1];
 
-int LMR_table[max_ply][64];
-int LMP_table[2][64];
+int LMR_table[max_ply][max_ply];
+int LMP_table[2][max_ply];
 int LMRBase = 30;
 int LMRDivision = 230;
 
@@ -112,7 +112,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
 
 static inline bool repetitionDetection() {
     // loop over repetitions positions
-    for (int i = 0; i < repetition_index; i++)
+    for (int i = repetition_index-2; i >= 0; i -= 2)
         if (repetition_table[i] == hash_key)
             return true;
 
