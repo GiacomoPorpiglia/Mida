@@ -489,20 +489,20 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and the position has low potential 
                 of raising alpha, we can skip all following quiet moves
                 */
-                if (LMRdepth <= 6 && (static_eval + 215 + 70*depth) <= alpha) {
+                if (LMRdepth <= 8 && (static_eval + 215 + 70*depth) <= alpha) {
                     skip_quiet_moves = true;
                 }
 
                 //SEE pruning for quiets
-                if(depth <= 8 && !see(move, -70*depth))
+                if(depth <= 10 && !see(move, -70*depth))
                     continue;
                 
             }
             //if not quiet move
             else {
                 //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
-                //Slso, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
-                if(depth <= 6 && !see(move, -15*depth*depth))
+                //Also, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
+                if(depth <= 8 && !see(move, -15*depth*depth))
                     continue;  
             }
 
