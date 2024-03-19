@@ -6,13 +6,6 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 vs v2.1: 118 - 16 - 66 [0.755]
-// ...      v2.2 playing White: 70 - 8 - 23  [0.807] 101
-// ...      v2.2 playing Black: 48 - 8 - 43  [0.702] 99
-// ...      White vs Black: 78 - 56 - 66  [0.555] 200
-// Elo difference: 195.5 +/- 42.0, LOS: 100.0 %, DrawRatio: 33.0 %
-// 200 of 200 games finished.
-
 int nodes = 0;
 
 movesList mGen[max_ply];
