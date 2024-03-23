@@ -14,8 +14,8 @@ SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][max_ply];
 int LMP_table[2][max_ply];
-int LMRBase = 30;
-int LMRDivision = 230;
+int LMRBase = 75;
+int LMRDivision = 300;
 
 void initSearch() {
     //Init LMR table
@@ -30,8 +30,8 @@ void initSearch() {
     LMR_table[0][0] = LMR_table[1][0] =  LMR_table[0][1] = 0;
 
     for(int depth = 1; depth < 64; depth++) {
-        LMP_table[0][depth] = 1.5 +  0.4 * depth * depth;
-        LMP_table[1][depth] = 2.5 +  0.9 * depth * depth;
+        LMP_table[0][depth] = 2.5 +  2.5 * depth * depth / 4.5;
+        LMP_table[1][depth] = 4.0 +  4.0 * depth * depth / 4.5;
     }
 }
 
@@ -271,7 +271,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     if(excluded_move != NULL_MOVE) ttHit = false;
 
     if (ttHit && ply && !pv_node) {
-        ttHit = true;
         static_eval = ttEntry->eval;
         if (ttEntry->depth >= depth &&
             (ttEntry->flag == HASH_FLAG_EXACT ||
@@ -314,7 +313,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     ss->static_eval = static_eval;
 
-    bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss-2)->static_eval);
+    bool improving = ply >= 2 && !in_check && !excluded_move && (ss->static_eval > (ss-2)->static_eval);
 
     (ss + 1)->excluded_move = NULL_MOVE;
     (ss)->double_extension  = !is_root ? (ss - 1)->double_extension : 0; 
@@ -322,12 +321,14 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
+    
     if(!pv_node && !in_check && !is_root && !excluded_move) {
 
         //reverse futility pruning
-        
-        if(depth < 9  && (static_eval - depth*80) >= beta)
-            return static_eval;
+        evaluation = ttHit ? ttEntry->eval : static_eval;
+        if (depth < 9 && (evaluation - depth * 80) >= beta)
+            return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
+                               // (it's  more accurate than the static one)
 
         //null move pruning
 
@@ -441,7 +442,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     //if no moves are availble, it's either checkmate or stalemate
     if (moveList->count == 0) {
         if (in_check)
-            return -MATE_VALUE + ply; // checkmate
+            return ss->excluded_move ? alpha : -MATE_VALUE + ply; // checkmate
         return 0;                     // stalemate
     }
 
@@ -499,7 +500,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && !is_root && quietMoveCount >= LMP_table[improving][depth]) {
+                if (!pv_node && !is_root && depth < 8 && quietMoveCount >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
