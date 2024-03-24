@@ -309,7 +309,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     because I haven't found a way to make the NN work without evaluating every single position. 
     So, I still have to evaluate the position even if I could use only the tt entry eval. :(
     */
-    static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
+    static_eval = static_eval ? (static_eval*99+evaluate<true>())/100 : evaluate<true>();
 
     ss->static_eval = static_eval;
 
@@ -500,7 +500,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && !is_root && depth < 8 && quietMoveCount >= LMP_table[improving][depth]) {
+                if (!pv_node && !is_root && depth <= 7 && quietMoveCount >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
@@ -514,12 +514,12 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and the position has low potential 
                 of raising alpha, we can skip all following quiet moves
                 */
-                if (LMRdepth <= 8 && (static_eval + 215 + 70*depth) <= alpha) {
+                if (LMRdepth <= 6 && (static_eval + 215 + 70*depth) <= alpha) {
                     skip_quiet_moves = true;
                 }
 
                 //SEE pruning for quiets
-                if(depth <= 10 && !see(move, -70*depth))
+                if(depth <= 8 && !see(move, -70*depth))
                     continue;
                 
             }
@@ -536,54 +536,54 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             //Singular extensions and multicut
             
             int extension = 0;
-            if(!is_root && ttHit && ttEntry->best_move == move && ttEntry->flag == HASH_FLAG_BETA && depth >= (6 + pv_node) && (ttEntry->depth >= depth - 3) && std::abs(ttEntry->eval) < MATE_SCORE) {
+            // if(!is_root && ttHit && ttEntry->best_move == move && ttEntry->flag == HASH_FLAG_BETA && depth >= (6 + pv_node) && (ttEntry->depth >= depth - 3) && std::abs(ttEntry->eval) < MATE_SCORE) {
                 
-                int singular_beta  = ttEntry->eval - depth;
+            //     int singular_beta  = ttEntry->eval - depth;
                 
-                //If we are in a situation where we had a ttHit with BETA FLAG, but the depth wasn't enough to return the value, we can use this info to say that probably we will still fail high.
-                //So we do a reduced-depth search STAYING at this level, meaning researching this current position,
-                //and if it fails high, we return singular_beta, pruning the tree (multicut)
-                //if we don't fail high, we may want to extend the search, because it's an uncertain position
-                ss->excluded_move = move;
+            //     //If we are in a situation where we had a ttHit with BETA FLAG, but the depth wasn't enough to return the value, we can use this info to say that probably we will still fail high.
+            //     //So we do a reduced-depth search STAYING at this level, meaning researching this current position,
+            //     //and if it fails high, we return singular_beta, pruning the tree (multicut)
+            //     //if we don't fail high, we may want to extend the search, because it's an uncertain position
+            //     ss->excluded_move = move;
 
-                int singular_score = search((depth-1) / 2, singular_beta-1, singular_beta, ss);
+            //     int singular_score = search((depth-1) / 2, singular_beta-1, singular_beta, ss);
 
-                ss->excluded_move = NULL_MOVE;
+            //     ss->excluded_move = NULL_MOVE;
 
-                //if no move fails high, the current move s singular, and we extend the search
-                if(singular_score < singular_beta) {
-                    extension = 1;
+            //     //if no move fails high, the current move s singular, and we extend the search
+            //     if(singular_score < singular_beta) {
+            //         extension = 1;
 
-                    //double extension in case move is very singular
-                    if(!pv_node && singular_score < singular_beta - 25 && ss->double_extension < 6) {
-                        extension = 2;
-                        ss->double_extension = (ss-1)->double_extension + 1;
-                    }
-                }
+            //         //double extension in case move is very singular
+            //         if(!pv_node && singular_score < singular_beta - 25 && ss->double_extension < 6) {
+            //             extension = 2;
+            //             ss->double_extension = (ss-1)->double_extension + 1;
+            //         }
+            //     }
 
-                //if all other moves fail high, cut
-                else if(singular_beta >= beta) return singular_beta; // multicut
+            //     //if all other moves fail high, cut
+            //     else if(singular_beta >= beta) return singular_beta; // multicut
 
-                /* 
-                    if we didn't prove every move fails high,
-                    but our stored eval is yet greater than beta,
-                    we are pretty sure that no move in this subtree
-                    is great, so we can search to a lower depth
-                */
-                else if(ttEntry->eval >= beta) extension = -2;
+            //     /* 
+            //         if we didn't prove every move fails high,
+            //         but our stored eval is yet greater than beta,
+            //         we are pretty sure that no move in this subtree
+            //         is great, so we can search to a lower depth
+            //     */
+            //     else if(ttEntry->eval >= beta) extension = -2;
 
-                /*
-                    if we didn't prove every move fails high,
-                    but our stored eval is yet greater than beta,
-                    but lower than the score returned by the null-window search,
-                    it means that maybe the eval stored in the TT wasn't so accurate.
-                    Therefore, we still trust it, but we reduce the depth of the search
-                    in this subtree only by one (so not a lot, because the situation is 
-                    more uncertain)
-                */
-                else if(ttEntry->eval <= singular_score) extension = -1;
+            //     /*
+            //         if we didn't prove every move fails high,
+            //         but our stored eval is yet greater than beta,
+            //         but lower than the score returned by the null-window search,
+            //         it means that maybe the eval stored in the TT wasn't so accurate.
+            //         Therefore, we still trust it, but we reduce the depth of the search
+            //         in this subtree only by one (so not a lot, because the situation is 
+            //         more uncertain)
+            //     */
+            //     else if(ttEntry->eval <= singular_score) extension = -1;
 
-            }
+            // }
 
             int newDepth = depth + extension;
 

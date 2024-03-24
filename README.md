@@ -109,9 +109,6 @@ Thank you for supporting Mida developement and training through
 
 # v2.4 Updates
 
-- Added singular extensions and multicut
-- Changed index calculation in trasposition table
-- More aggressive LMR and LMP
 - Bug fix in move generation (en passant pin)
 
 
