@@ -21,8 +21,6 @@ extern int LMRDivision;
 typedef struct {
     int static_eval{};
     MOVE move{};
-    MOVE excluded_move{};
-    uint8_t double_extension{};
 } SearchStack;
 
 extern movesList mGen[max_ply];

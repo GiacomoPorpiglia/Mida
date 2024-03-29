@@ -266,9 +266,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     tt* ttEntry = readHashEntry(best_move);
     bool ttHit = (ttEntry != nullptr);
 
-    MOVE excluded_move = ss->excluded_move;
-
-    if(excluded_move != NULL_MOVE) ttHit = false;
 
     if (ttHit && ply && !pv_node) {
         static_eval = ttEntry->eval;
@@ -313,16 +310,14 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     ss->static_eval = static_eval;
 
-    bool improving = ply >= 2 && !in_check && !excluded_move && (ss->static_eval > (ss-2)->static_eval);
+    bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss-2)->static_eval);
 
-    (ss + 1)->excluded_move = NULL_MOVE;
-    (ss)->double_extension  = !is_root ? (ss - 1)->double_extension : 0; 
 
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
     
-    if(!pv_node && !in_check && !is_root && !excluded_move) {
+    if(!pv_node && !in_check && !is_root) {
 
         //reverse futility pruning
         evaluation = ttHit ? ttEntry->eval : static_eval;
@@ -442,7 +437,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     //if no moves are availble, it's either checkmate or stalemate
     if (moveList->count == 0) {
         if (in_check)
-            return ss->excluded_move ? alpha : -MATE_VALUE + ply; // checkmate
+            return -MATE_VALUE + ply; // checkmate
         return 0;                     // stalemate
     }
 
@@ -469,8 +464,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             pickNextMove(moveList, moveCount);
             move = moveList->moves[moveCount];
 
-            if (move == ss->excluded_move)
-                continue;
 
             bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || 
                                 (moveList->move_scores[moveCount] == secondKillerScore);
@@ -533,61 +526,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
 
 
-            //Singular extensions and multicut
-            
-            int extension = 0;
-            // if(!is_root && ttHit && ttEntry->best_move == move && ttEntry->flag == HASH_FLAG_BETA && depth >= (6 + pv_node) && (ttEntry->depth >= depth - 3) && std::abs(ttEntry->eval) < MATE_SCORE) {
-                
-            //     int singular_beta  = ttEntry->eval - depth;
-                
-            //     //If we are in a situation where we had a ttHit with BETA FLAG, but the depth wasn't enough to return the value, we can use this info to say that probably we will still fail high.
-            //     //So we do a reduced-depth search STAYING at this level, meaning researching this current position,
-            //     //and if it fails high, we return singular_beta, pruning the tree (multicut)
-            //     //if we don't fail high, we may want to extend the search, because it's an uncertain position
-            //     ss->excluded_move = move;
-
-            //     int singular_score = search((depth-1) / 2, singular_beta-1, singular_beta, ss);
-
-            //     ss->excluded_move = NULL_MOVE;
-
-            //     //if no move fails high, the current move s singular, and we extend the search
-            //     if(singular_score < singular_beta) {
-            //         extension = 1;
-
-            //         //double extension in case move is very singular
-            //         if(!pv_node && singular_score < singular_beta - 25 && ss->double_extension < 6) {
-            //             extension = 2;
-            //             ss->double_extension = (ss-1)->double_extension + 1;
-            //         }
-            //     }
-
-            //     //if all other moves fail high, cut
-            //     else if(singular_beta >= beta) return singular_beta; // multicut
-
-            //     /* 
-            //         if we didn't prove every move fails high,
-            //         but our stored eval is yet greater than beta,
-            //         we are pretty sure that no move in this subtree
-            //         is great, so we can search to a lower depth
-            //     */
-            //     else if(ttEntry->eval >= beta) extension = -2;
-
-            //     /*
-            //         if we didn't prove every move fails high,
-            //         but our stored eval is yet greater than beta,
-            //         but lower than the score returned by the null-window search,
-            //         it means that maybe the eval stored in the TT wasn't so accurate.
-            //         Therefore, we still trust it, but we reduce the depth of the search
-            //         in this subtree only by one (so not a lot, because the situation is 
-            //         more uncertain)
-            //     */
-            //     else if(ttEntry->eval <= singular_score) extension = -1;
-
-            // }
-
-            int newDepth = depth + extension;
-
-
             // Copy the hash key to restore it after the search, together with unplay move
             uint64_t hash_key_copy = hash_key;
             fillDirtyPiece(ply+1, move);
@@ -609,7 +547,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
             // full depth search
             if (moveCount == 0)
-                evaluation = -search(newDepth - 1, -beta, -alpha, ss + 1);
+                evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
 
             // Late move reduction (LMR)
             else {
@@ -630,9 +568,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
                     
-                    R = std::min(newDepth - 1, std::max(1, R)); // make sure we don't end up in quiescence
+                    R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
-                    evaluation = -search(newDepth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
+                    evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
                 }
 
                 else
@@ -647,7 +585,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         the rest of the moves are searched with the goal of proving that they are all bad.
                         It's possible to do this a bit faster than a search that worries that one
                         of the remaining moves might be good. */
-                    evaluation = -search(newDepth - 1, -alpha - 1, -alpha, ss + 1);
+                    evaluation = -search(depth - 1, -alpha - 1, -alpha, ss + 1);
                     /*  If the algorithm finds out that it was wrong, and that one of the
                         subsequent moves was better than the first PV move, it has to search again,
                         in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
@@ -655,7 +593,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         "bad move proof" search referred to earlier. */
                     if ((evaluation > alpha) && (evaluation < beta))
                         // research the move  that has failed to be proved to be bad
-                        evaluation = -search(newDepth - 1, -beta, -alpha, ss + 1);
+                        evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
                 }
             }
 
@@ -690,8 +628,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
                 if (evaluation >= beta) {
                     // store hash entry
-                    if(excluded_move==NULL_MOVE)
-                        writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
+                    writeHashEntry(depth, beta, best_move, HASH_FLAG_BETA);
 
                     // update killer and history moves (only if it's a quiet move)
                     if (is_quiet) {
