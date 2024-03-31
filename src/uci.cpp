@@ -446,7 +446,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 2.3\n");
+    printf("id name MIDA 2.3.1\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -505,7 +505,7 @@ void uci_loop()
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 2.3\n");
+            printf("id name MIDA 2.3.1\n");
             printf("id author Giacomo Porpiglia\n");
             printf("setoption name Hash type spin default 64 min 4 max 1024\n");
 
