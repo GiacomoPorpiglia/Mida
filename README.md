@@ -107,9 +107,10 @@ Thank you for supporting Mida developement and training through
 [![Paypal](./imgs/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
 
 
-# v2.4 Updates
+# v2.3.1 Updates
 
 - Bug fix in move generation (en passant pin)
+- Small upgrade in Reverse Futility Pruning
 
 
 # v2.3 Updates
