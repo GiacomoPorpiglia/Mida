@@ -6,21 +6,14 @@
 #include <cmath>
 #include "see.h"
 
-// Score of v2.2 vs v2.1: 118 - 16 - 66 [0.755]
-// ...      v2.2 playing White: 70 - 8 - 23  [0.807] 101
-// ...      v2.2 playing Black: 48 - 8 - 43  [0.702] 99
-// ...      White vs Black: 78 - 56 - 66  [0.555] 200
-// Elo difference: 195.5 +/- 42.0, LOS: 100.0 %, DrawRatio: 33.0 %
-// 200 of 200 games finished.
-
 int nodes = 0;
 
 movesList mGen[max_ply];
 
 SearchStack searchStack[max_ply + 1];
 
-int LMR_table[max_ply][64];
-int LMP_table[2][8];
+int LMR_table[max_ply][max_ply];
+int LMP_table[2][max_ply];
 int LMRBase = 75;
 int LMRDivision = 300;
 
@@ -34,9 +27,11 @@ void initSearch() {
         }
     }
 
-    for(int depth = 1; depth < 8; depth++) {
-        LMP_table[0][depth] = 2.5 + 2.5 * depth * depth / 4.5;
-        LMP_table[1][depth] = 4.0 + 4 * depth * depth / 4.5;
+    LMR_table[0][0] = LMR_table[1][0] =  LMR_table[0][1] = 0;
+
+    for(int depth = 1; depth < 64; depth++) {
+        LMP_table[0][depth] = 2.5 +  2.5 * depth * depth / 4.5;
+        LMP_table[1][depth] = 4.0 +  4.0 * depth * depth / 4.5;
     }
 }
 
@@ -47,8 +42,8 @@ static inline int relativeSquare(int sq) {
 //populate the dirty piece for current ply in case of null move(from CFish)
 static inline void fillDirtyPieceNull(int ply) {
     DirtyPiece *dp = &(nn_stack[ply].dirtyPiece);
-    dp->dirtyNum=0;
-    dp->pc[0]=0;
+    dp->dirtyNum = 0;
+    dp->pc[0]    = 0;
 }
 
 // populate the dirty piece for current ply (from CFish NNUE implementation)
@@ -57,13 +52,13 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     int from = getSquareFrom(move);
     int to   = getSquareTo(move);
     
-    int oldPieceType = board.allPieces[getSquareFrom(move)];
+    int oldPieceType      = board.allPieces[getSquareFrom(move)];
     int capturedPieceType = board.allPieces[getSquareTo(move)];
-    int newPieceType = getNewPieceType(move);
+    int newPieceType      = getNewPieceType(move);
 
     DirtyPiece* dp = &(nn_stack[ply].dirtyPiece);
 
-    dp->dirtyNum=1;
+    dp->dirtyNum = 1;
     
     //castle
     if(isCastle(move)) {
@@ -77,6 +72,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
         dp->from[1]  = rfrom;
         dp->to[1]    = rto;
     }
+
     //capture
     else if(isCapture(move)) {
         dp->dirtyNum = 2;
@@ -94,10 +90,11 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
     dp->pc[0]   = board.colorToMove==WHITE ?  (oldPieceType + 1) : (oldPieceType+7);
     dp->from[0] = from;
     dp->to[0]   = to;
+
     // promotion
     if (isPromotion(move)) {
-        dp->to[0]             = 64; // pawn to SQ_NONE, promoted piece from SQ_NONE
-        dp->pc[dp->dirtyNum]  = board.colorToMove==WHITE ? (newPieceType + 1) : (newPieceType+7);
+        dp->to[0]              = 64; // pawn to SQ_NONE, promoted piece from SQ_NONE
+        dp->pc[dp->dirtyNum]   = board.colorToMove==WHITE ? (newPieceType + 1) : (newPieceType+7);
         dp->from[dp->dirtyNum] = 64;
         dp->to[dp->dirtyNum]   = to;
         dp->dirtyNum++;
@@ -108,7 +105,7 @@ static inline void fillDirtyPiece(int ply, MOVE move) {
 
 static inline bool repetitionDetection() {
     // loop over repetitions positions
-    for (int i = 0; i < repetition_index; i++)
+    for (int i = repetition_index-2; i >= 0; i -= 2)
         if (repetition_table[i] == hash_key)
             return true;
 
@@ -125,7 +122,6 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
         // "listen" to the GUI/user input
         communicate();
 
-    nodes++;
     // draw by 50 move rule
     if (fiftyMoveRuleTable[plyGameCounter] == 100)
         return 0;
@@ -139,7 +135,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     standing_pat = evaluate<true>();
 
     ss->static_eval = standing_pat;
-    
+
     //Delta pruning
     if(standing_pat < alpha-pieceValues[Q]) return alpha;
 
@@ -184,7 +180,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
             if (moveList->move_scores[moveCount] < WinningCaptureScore && playedCount >= 1)
                 continue;
             
-            int oldPieceType = board.allPieces[getSquareFrom(move)];
+            int oldPieceType      = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
 
             uint16_t oldSpecs = board.boardSpecs;
@@ -196,6 +192,9 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
             playedCount++;
             playMove(move);
             ply++;
+
+            nodes++;
+
             ss->move = move;
             // increment repetition index & store hash key
             repetition_index++;
@@ -204,8 +203,9 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
             evaluation = -quiescence(-beta, -alpha, ss + 1);
 
             ply--;
-            // decrement repetition index
+            
             repetition_index--;
+
             hash_key = hash_key_copy;
             unplayMove(move, oldPieceType, oldSpecs, capturedPieceType);
 
@@ -264,8 +264,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
     // read hash entry
     tt* ttEntry = readHashEntry(best_move);
+    bool ttHit = (ttEntry != nullptr);
 
-    if (ttEntry!=nullptr && ply && !pv_node) {
+
+    if (ttHit && ply && !pv_node) {
         static_eval = ttEntry->eval;
         if (ttEntry->depth >= depth &&
             (ttEntry->flag == HASH_FLAG_EXACT ||
@@ -290,8 +292,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     if (ply > max_ply - 1)
         return evaluate<false>();
 
-    nodes++;
-
     bool in_check = board.inCheck();
 
     if(in_check)
@@ -306,22 +306,27 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     because I haven't found a way to make the NN work without evaluating every single position. 
     So, I still have to evaluate the position even if I could use only the tt entry eval. :(
     */
-    static_eval = static_eval ? (static_eval*4+evaluate<true>())/5 : evaluate<true>();
+    static_eval = static_eval ? (static_eval*99+evaluate<true>())/100 : evaluate<true>();
 
     ss->static_eval = static_eval;
 
     bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss-2)->static_eval);
 
+
     movesList *moveList = &mGen[ply];
     bool are_moves_calculated = false;
 
+    
     if(!pv_node && !in_check && !is_root) {
 
         //reverse futility pruning
-        if(depth < 9  && (static_eval - depth*80) >= beta)
-            return static_eval;
+        evaluation = ttHit ? ttEntry->eval : static_eval;
+        if (depth < 9 && (evaluation - depth * 80) >= beta)
+            return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
+                               // (it's  more accurate than the static one)
 
         //null move pruning
+
         if((ss-1)->move != NULL_MOVE && nonPawnMat(board.colorToMove) && (depth >= 3) && static_eval >= beta) {
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
@@ -372,18 +377,21 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             
         }
 
-      
-        //razoring (inspired from Strelka)
-        if(depth <= 2) {
+        //razoring
+
+        if (depth <= 2)
+        {
             // add first bonus
             evaluation = static_eval + 125;
             // define new score
             int new_eval;
 
             // static evaluation indicates a fail-low node
-            if (evaluation < beta) {
+            if (evaluation < beta)
+            {
                 // on depth 1
-                if (depth == 1) {
+                if (depth == 1)
+                {
                     // get quiscence score
                     new_eval = quiescence(alpha, beta, ss);
                     // return quiescence score if it's greater then static evaluation score
@@ -393,7 +401,8 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 // add second bonus to static evaluation
                 evaluation += 175;
                 // static evaluation indicates a fail-low node
-                if ((evaluation < beta) && (depth <= 2)) {
+                if ((evaluation < beta) && (depth <= 2))
+                {
                     // get quiscence score
                     new_eval = quiescence(alpha, beta, ss);
 
@@ -444,8 +453,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
         return 0;
 
     else {
+
         MOVE move;
-        int quietMoveCount=0;
+        int  quietMoveCount=0;
         bool skip_quiet_moves = false;
 
         movesList quietList;
@@ -454,13 +464,16 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             pickNextMove(moveList, moveCount);
             move = moveList->moves[moveCount];
 
-            bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || (moveList->move_scores[moveCount] == secondKillerScore);
 
-            int oldPieceType = board.allPieces[getSquareFrom(move)];
+            bool isKillerMove = (moveList->move_scores[moveCount] == firstKillerScore) || 
+                                (moveList->move_scores[moveCount] == secondKillerScore);
+
+            int oldPieceType      = board.allPieces[getSquareFrom(move)];
             int capturedPieceType = board.allPieces[getSquareTo(move)];
-            uint16_t oldSpecs = board.boardSpecs;
+            uint16_t oldSpecs     = board.boardSpecs;
             
-            bool is_ok_to_reduce = !in_check && !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
+            bool is_ok_to_reduce  = !in_check && 
+                                    !(pv_node && (isCapture(move) || isEnPassant(move) || isPromotion(move)));
 
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
 
@@ -480,8 +493,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && depth <= 7 && quietMoveCount >= LMP_table[improving][depth])
-                {
+                if (!pv_node && !is_root && depth <= 7 && quietMoveCount >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
@@ -496,7 +508,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 of raising alpha, we can skip all following quiet moves
                 */
                 if (LMRdepth <= 6 && (static_eval + 215 + 70*depth) <= alpha) {
-                    skip_quiet_moves=true;
+                    skip_quiet_moves = true;
                 }
 
                 //SEE pruning for quiets
@@ -507,10 +519,11 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             //if not quiet move
             else {
                 //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
-                //Slso, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
-                if(depth <= 6 && !see(move, -15*depth*depth))
+                //Also, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
+                if(depth <= 8 && !see(move, -15*depth*depth))
                     continue;  
             }
+
 
 
             // Copy the hash key to restore it after the search, together with unplay move
@@ -521,6 +534,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             repetition_index++;
             repetition_table[repetition_index] = hash_key;
             ply++;
+
+            nodes++;
+
             ss->move = move;
 
             if(is_quiet) {
@@ -536,10 +552,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             // Late move reduction (LMR)
             else {
                 // condition to consider late move reduction (LMR)
-                if ((moveCount >= 4) && (depth >= 3) && is_ok_to_reduce) {
+                if ((moveCount >= 3 + improving) && (depth >= 3) && is_ok_to_reduce) {
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
-                    R += !pv_node; // increase reduction if we it's not a pv-node
+                    R += !pv_node;   // increase reduction if we it's not a pv-node
                     R += !improving; // increase reduction if we are not improving
                     R += is_quiet && !see(move, -50 * depth);   // we increase the reduction if the move is quiet, because they are less likely to be the best move
 

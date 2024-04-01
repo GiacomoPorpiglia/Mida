@@ -14,12 +14,12 @@
 Mida is a chess engine built entirely in C++. From version 2.0 it uses NNUE for evaluation. </br>
 
 
-## Engine strength
+## Engine strength (Elo)
 
 
 | Version  | [CCRL 40/15](https://computerchess.org.uk/ccrl/4040/) | [CCRL Blitz](https://computerchess.org.uk/ccrl/404/) |
 | -------- | ---------- | ---------- |
-| 2.3      |    3148    |    3111    |
+| 2.3      |    3146    |    3107    |
 | 2.2      |    3088    |    3088    |
 | 2.1      |    2941    |     /      |
 | 2.0      | / (~2600)  | / (~2600)  |
@@ -60,11 +60,13 @@ The search is based on Alpha-beta pruning algorithm, with various pruning and re
 * Null move pruning
 * Razoring
 * Mate distance pruning
-* Late move pruning
+* Late move pruning (LMP)
 * Futility pruning
 * SEE (static exchange evaluation) used in move ordering as well as pruning for quiet and non-quiet moves
-* Late move reduction
+* Late move reduction (LMR)
 * Delta pruning
+* Singular extensions
+* Multicut
 
 <br />
 
@@ -103,6 +105,12 @@ Also, thanks to Graham Banks, admin of CCRL, for helping me compile the code pro
 Thank you for supporting Mida developement and training through 
 
 [![Paypal](./imgs/paypal.jpg)](https://www.paypal.com/donate/?hosted_button_id=VBC6XDLX4CS62).
+
+
+# v2.3.1 Updates
+
+- Bug fix in move generation (en passant pin)
+- Small upgrade in Reverse Futility Pruning
 
 
 # v2.3 Updates

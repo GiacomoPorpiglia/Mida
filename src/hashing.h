@@ -12,10 +12,13 @@ extern int hash_table_entries;
 
 // random piece keys
 extern uint64_t piece_keys[2][6][64];
+
 // random en passant keys
 extern uint64_t en_passant_keys[64];
+
 // random castle keys
 extern uint64_t castle_keys[16];
+
 // random side key
 extern uint64_t side_key;
 

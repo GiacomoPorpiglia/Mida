@@ -13,14 +13,14 @@
 
 extern int nodes;
 
-extern int LMR_table[max_ply][64];
-extern int LMP_table[2][8];
+extern int LMR_table[max_ply][max_ply];
+extern int LMP_table[2][max_ply];
 extern int LMRBase;
 extern int LMRDivision;
 
 typedef struct {
-    int static_eval;
-    MOVE move;
+    int static_eval{};
+    MOVE move{};
 } SearchStack;
 
 extern movesList mGen[max_ply];

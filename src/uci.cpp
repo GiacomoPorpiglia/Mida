@@ -346,8 +346,10 @@ static inline void parse_go(char *command)
         auto start = chrono::steady_clock::now();
         int totalMoves = perft(depth, depth);
         auto end = chrono::steady_clock::now();
+        auto time = chrono::duration_cast<chrono::milliseconds>(end - start).count();
         printf("Total nodes: %d\n", totalMoves);
-        printf("Time (ms): %d\n", chrono::duration_cast<chrono::milliseconds>(end - start).count());
+        printf("Time (ms): %d\n", time);
+        printf("NPS: %.2f M\n", (float)(totalMoves)/(time*1000));
         clearTranspositionTable();
     }
     else
@@ -444,7 +446,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 2.3\n");
+    printf("id name MIDA 2.3.1\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 
@@ -503,7 +505,7 @@ void uci_loop()
 
         else if (strncmp(input, "uci", 3) == 0)
         {
-            printf("id name MIDA 2.3\n");
+            printf("id name MIDA 2.3.1\n");
             printf("id author Giacomo Porpiglia\n");
             printf("setoption name Hash type spin default 64 min 4 max 1024\n");
 

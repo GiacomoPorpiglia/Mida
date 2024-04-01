@@ -14,6 +14,7 @@ const int mvv_lva[6][6] = {
 int history_moves[2][6][max_ply] = {0};
 MOVE killer_moves[2][max_ply];
 int pv_length[max_ply];
+
 // PV table
 MOVE pv_table[max_ply][max_ply];
 int follow_pv = 0;
@@ -49,7 +50,6 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
 
     int bonus = std::min(2100, 300 * depth - 300);
     
-
     if (depth > 2) {
         int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)];
         *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
@@ -62,12 +62,14 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
             continue;
         // penalize history of moves which didn't cause beta-cutoffs
         int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(quiet_move)]][getSquareTo(quiet_move)];
+        
         *history += -bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
     }
 }
 
 
 static inline int scoreMove(MOVE move) {
+
     // if PV move scoring is allowed
     if (score_pv) {
         // if we are scoring PV move
@@ -81,6 +83,7 @@ static inline int scoreMove(MOVE move) {
 
     int squareFrom = getSquareFrom(move);
     int squareTo = getSquareTo(move);
+
     // check if it's a capture
     if (isCapture(move))
         return mvv_lva[board.allPieces[squareFrom]][board.allPieces[squareTo]] + WinningCaptureScore * see(move, -105);
@@ -123,7 +126,7 @@ void pickNextMove(movesList *moveList, int moveNum) {
     for (index = moveNum; index < moveList->count; index++) {
         if (moveList->move_scores[index] > bestscore) {
             bestscore = moveList->move_scores[index];
-            bestnum = index;
+            bestnum   = index;
         }
     }
 

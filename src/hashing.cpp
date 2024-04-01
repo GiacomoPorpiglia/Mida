@@ -19,8 +19,7 @@ void init_hash_table() {
 }
 
 // clear transposition table
-void clearTranspositionTable()
-{
+void clearTranspositionTable() {
     currentAge = 0; // reset age
     memset(transposition_table, 0, hash_table_entries * sizeof(tt));
     std::cout << "Hash table Initialized with size " << hash_table_size << " MB\n\n";
@@ -33,8 +32,7 @@ uint64_t en_passant_keys[64];
 uint64_t castle_keys[16];
 
 // generate the castle key index for Zobrist hashing based on castling rights
-int generate_castle_key_index()
-{
+int generate_castle_key_index() {
     int castle_idx = 0;
     castle_idx += canWhiteCastleKing(board.boardSpecs) ? 8 : 0;
     castle_idx += canWhiteCastleQueen(board.boardSpecs) ? 4 : 0;
@@ -44,18 +42,21 @@ int generate_castle_key_index()
 }
 
 // generate Zobrist hash key of the current position
-uint64_t generate_hash_key()
-{
+uint64_t generate_hash_key() {
     uint64_t final_key = 0ULL;
-
+    
     // loop over pieces
-    for (int square = 0; square < 64; square++)
-    {
+
+
+    uint64_t occupancy = board.get_occupancy();
+    int square;
+    while(occupancy) {
+        square = pop_lsb(occupancy);
         int pieceTypeOnWhite = board.getWhitePieceTypeOnSquare(square);
         int pieceTypeOnBlack = board.getBlackPieceTypeOnSquare(square);
         if (pieceTypeOnWhite != NOPIECE)
             final_key ^= piece_keys[WHITE][pieceTypeOnWhite][square];
-        if (pieceTypeOnBlack != NOPIECE)
+        else if (pieceTypeOnBlack != NOPIECE)
             final_key ^= piece_keys[BLACK][pieceTypeOnBlack][square];
     }
 
@@ -69,7 +70,7 @@ uint64_t generate_hash_key()
     final_key ^= castle_keys[castle_idx];
 
     // hash the side only if black is to move
-    if (board.colorToMove == 0)
+    if (board.colorToMove == BLACK)
         final_key ^= side_key;
 
     return final_key;
@@ -78,15 +79,10 @@ uint64_t generate_hash_key()
 // init random hash keys for Zobrist hashing
 void init_random_keys()
 {
-
-    // random state (seed)
-    // unsigned int random_state = 1804289383; //already inintialized above
-
     // loop over pieces
-    for (int piece = K; piece <= P; piece++)
-    {
-        for (int square = 0; square < 64; square++)
-        {
+    for (int piece = K; piece <= P; piece++) {
+        for (int square = 0; square < 64; square++) {
+
             // init random piece keys
             piece_keys[BLACK][piece][square] = random_uint64_t();
             piece_keys[WHITE][piece][square] = random_uint64_t();
@@ -104,20 +100,21 @@ void init_random_keys()
 }
 
 // read entry from the transposition table
-tt* readHashEntry(MOVE &best_move)
-{
+tt* readHashEntry(MOVE &best_move) {
     // addressing the location of the entry we want to read
-    tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
+    tt *hash_entry = transposition_table + (((hash_key >> 32) * hash_table_entries) >> 32);
 
     // make sure we got the exact position that we need
     // we start by comparing the current hash key with the one stored in the address
-    if (hash_entry->hash_key == hash_key)
-    {
+    if (hash_entry->hash_key == hash_key) {
         best_move = hash_entry->best_move;
+
         if (hash_entry->eval < -MATE_SCORE)
-                hash_entry->eval += ply;
-        if (hash_entry->eval > MATE_SCORE)
+            hash_entry->eval += ply;
+
+        else if (hash_entry->eval > MATE_SCORE)
             hash_entry->eval -= ply;
+
         return hash_entry;
         
     }
@@ -128,11 +125,11 @@ tt* readHashEntry(MOVE &best_move)
 void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
 {
     // address of the position in the transposition table we want to write in
-    tt *hash_entry = transposition_table + (hash_key % hash_table_entries);
+    tt *hash_entry = transposition_table + (((hash_key >> 32) * hash_table_entries) >> 32);
 
     /*we write if one of these conditions happpens:
         - the entry is empty
-        - the age is less that the current age(meaning the entry comes from an older search)
+        - the age is less than the current age (meaning the entry we will overwrite comes from an older search)
         - the depth of the entry is less than the current one (we prefer entries coming from nodes closer to the root, because they can cause more cutoffs)
     */
     bool replace = !hash_entry->hash_key || (hash_entry->age != currentAge || hash_entry->depth <= depth);
@@ -143,7 +140,7 @@ void writeHashEntry(int depth, int evaluation, MOVE best_move, int hash_flag)
     // store the score independent from path from root to current node,
     if (evaluation < -MATE_SCORE)
         evaluation -= ply;
-    if (evaluation > MATE_SCORE)
+    else if (evaluation > MATE_SCORE)
         evaluation += ply;
 
     hash_entry->depth = (uint8_t)depth;

@@ -55,8 +55,8 @@ static inline void nnue_input(int *pieces, int *squares) {
 NNUEdata nn_stack[max_ply+1];
 NNUEdata* stack[3];
 template<>
-int evaluate<true>()
-{
+int evaluate<true>() {
+    
     nnue_input(nnue_pieces, nnue_squares);
     int side = board.colorToMove == WHITE ? BLACK : WHITE; // the NNUE side is 0 if white to move, while our WHITE is equal to 1
 
@@ -70,8 +70,8 @@ int evaluate<true>()
 }
 
 template<>
-int evaluate<false>() 
-{
+int evaluate<false>()  {
+
     nnue_input(nnue_pieces, nnue_squares);
     int side = board.colorToMove == WHITE ? BLACK : WHITE; // the NNUE side is 0 if white to move, while our WHITE is equal to 1
 
