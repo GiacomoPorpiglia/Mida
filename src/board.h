@@ -54,15 +54,12 @@ public:
     uint64_t kingPseudoLegalMoves;
     uint64_t kingMoves;
 
-    uint64_t checkers_bb = 0ULL;
-
     uint64_t inCheckMask;
     uint64_t pushMask;
     uint64_t captureMask;
     int isInCheckByPawn;
 
     int colorToMove; // 1 if white to move, 0 if black to move
-    bool isInCheck;
     int kingPos;
 
     void pretty_print_bb(uint64_t bb);
@@ -118,7 +115,7 @@ private:
     int positionFromCoord(string coord);
     uint64_t whitePawnPushMap(int square, uint64_t occupancy);
     uint64_t blackPawnPushMap(int square, uint64_t occupancy);
-    void findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy);
+    uint64_t findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy);
 
     uint64_t plus1(int square, int max = 8);
     uint64_t plus7(int square, int max = 8);

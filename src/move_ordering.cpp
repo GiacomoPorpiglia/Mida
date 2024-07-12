@@ -70,15 +70,14 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
 
 static inline int scoreMove(MOVE move) {
 
-    // if PV move scoring is allowed
-    if (score_pv) {
-        // if we are scoring PV move
-        if (pv_table[0][ply] == move) {
-            // disable score PV flag
-            score_pv = 0;
-            // score PV move giving it the highest score to search it first
-            return pvMoveScore;
-        }
+    // if PV move scoring is allowed and if we are scoring PV move
+    if (score_pv && pv_table[0][ply] == move) {
+        
+        // disable score PV flag
+        score_pv = 0;
+        // score PV move giving it the highest score to search it first
+        return pvMoveScore;
+
     }
 
     int squareFrom = getSquareFrom(move);
@@ -89,27 +88,27 @@ static inline int scoreMove(MOVE move) {
         return mvv_lva[board.allPieces[squareFrom]][board.allPieces[squareTo]] + WinningCaptureScore * see(move, -105);
 
     // special case: en passant (we consider it as pawn takes pawn)
-    else if (isEnPassant(move))
-        return mvv_lva[P][P] + WinningCaptureScore;
+    if (isEnPassant(move))
+        return mvv_lva[P][P];
 
     //if is capture, score it as a good SEE capture + MvV_LVA
-    else if (isPromotion(move)) {
+    if (isPromotion(move)) {
         int newPieceType = getNewPieceType(move);
         return mvv_lva[P][newPieceType] + WinningCaptureScore * (newPieceType==Q);
     }
 
     // score quiet move
-    else {
-        // score 1st killer move
-        if (killer_moves[0][ply] == move)
-            return firstKillerScore;
-        // score 2nd killer move
-        else if (killer_moves[1][ply] == move)
-            return secondKillerScore;
-        // score history move
-        else
-            return history_moves[board.colorToMove][board.allPieces[squareFrom]][squareTo];
-    }
+
+    // score 1st killer move
+    if (killer_moves[0][ply] == move)
+        return firstKillerScore;
+    // score 2nd killer move
+    else if (killer_moves[1][ply] == move)
+        return secondKillerScore;
+
+    // else, score history move
+    return history_moves[board.colorToMove][board.allPieces[squareFrom]][squareTo];
+
     return 0;
 }
 

@@ -34,9 +34,9 @@ uint64_t castle_keys[16];
 // generate the castle key index for Zobrist hashing based on castling rights
 int generate_castle_key_index() {
     int castle_idx = 0;
-    castle_idx += canWhiteCastleKing(board.boardSpecs) ? 8 : 0;
+    castle_idx += canWhiteCastleKing(board.boardSpecs)  ? 8 : 0;
     castle_idx += canWhiteCastleQueen(board.boardSpecs) ? 4 : 0;
-    castle_idx += canBlackCastleKing(board.boardSpecs) ? 2 : 0;
+    castle_idx += canBlackCastleKing(board.boardSpecs)  ? 2 : 0;
     castle_idx += canBlackCastleQueen(board.boardSpecs) ? 1 : 0;
     return castle_idx;
 }
@@ -46,8 +46,7 @@ uint64_t generate_hash_key() {
     uint64_t final_key = 0ULL;
     
     // loop over pieces
-
-
+    
     uint64_t occupancy = board.get_occupancy();
     int square;
     while(occupancy) {

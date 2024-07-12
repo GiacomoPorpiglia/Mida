@@ -32,7 +32,6 @@ void Board::reset() {
     blackPiecesValue = 0;
 
     boardSpecs = (1<<15);
-    isInCheck = false;
 }
 
 void Board::loadFenPosition(string fen) {
@@ -407,7 +406,7 @@ uint64_t Board::pushMaskFromPieceToKing(int kingPos, int checkerPos, int pieceTy
 }
 
 
-void Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
+uint64_t Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
     uint64_t overlapMap=0;
     uint64_t overlapQueenMap=0;
 
@@ -415,6 +414,8 @@ void Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
     int square;
 
     uint64_t movesFromKing = 0ULL;
+
+    uint64_t checkers_bb = 0ULL;
 
     uint64_t bishop_att = 0ULL;
     uint64_t rook_att   = 0ULL;
@@ -465,9 +466,10 @@ void Board::findCheckers(uint64_t opponentBitboards[6], uint64_t occupancy) {
                 break;
             }
             if (count_bits(checkers_bb) > 1)
-                return;
+                return checkers_bb;
         }  
     }
+    return checkers_bb;
 }
 
 void Board::calculateAttackedSquares(uint64_t opponentBitboards[6]) {
@@ -904,9 +906,8 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
     uint64_t* opponentBitboards    = pieces_bb[!side_to_move];
 
     moveList->count = 0;
-    checkers_bb = 0ULL;
     
-    isInCheck = false;
+    bool isInCheck = false;
     pinnedPiecesBB = 0ULL;
     //get color to move king position
     kingPos = bitScanForward(colorToMoveBitboards[K]);
@@ -925,12 +926,12 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
     kingMoves = king_attacks[kingPos] & ~(colorToMoveOccupiedBB | attackedSquares);
 
     //see if the king is in check. in case there are checkers, the bb checkers_bb will contain the checkers positions as hot bits
-    findCheckers(opponentBitboards, occupancy);
+    uint64_t checkers_bb = findCheckers(opponentBitboards, occupancy);
 
     inCheckMask     = 0ULL;
     pushMask        = 0ULL;
     captureMask     = 0ULL;
-    isInCheckByPawn = -1; // -1 f is not checked by pawn, if it is the value will be the pos of the pawn
+    isInCheckByPawn = -1; // -1 if is not checked by pawn, if it is the value will be the pos of the pawn
 
     if(count_bits(checkers_bb)) {
         isInCheck = true;
@@ -941,7 +942,7 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
         return;
     }
     //if only one checker
-    else if (count_bits(checkers_bb)) {
+    if (isInCheck) {
 
         int checker = bitScanForward(checkers_bb); //checker pos
         if(get_bit(opponentBitboards[P], checker)) 
@@ -960,7 +961,7 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
         inCheckMask = captureMask | pushMask;
     }
     else {
-        inCheckMask = ~inCheckMask;
+        inCheckMask = ~inCheckMask; // if king is not in check, set the check mask to all ones, meaning we can move any piece wherever (apart from pins which are considered later)
     }
 
     calculatePinnedPieces(opponentBitboards, colorToMoveOccupiedBB, opponentOccupiedBB);
@@ -969,7 +970,7 @@ void Board::calculateMoves(int side_to_move, movesList *moveList)
     calculateLegalMoves(colorToMoveBitboards, opponentBitboards, isInCheckByPawn, moveList);
 
     //if king is in check, don't look for castling moves
-    if (count_bits(checkers_bb)) {
+    if (isInCheck) {
         addMoves(kingPos, kingMoves, K, moveList);
         return;
     }

@@ -321,7 +321,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
         //reverse futility pruning
         evaluation = ttHit ? ttEntry->eval : static_eval;
-        if (depth < 9 && (evaluation - depth * 80) >= beta)
+        if (depth < 9 && (evaluation - 200 * (depth- improving) ) >= beta)
             return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
                                // (it's  more accurate than the static one)
 
@@ -348,7 +348,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             chances are we won't find a beta cutoff and so we can use a bigger
             reduction factor.
             */
-            int R = 3 + depth / 3 + std::min(3, (static_eval-beta) / 180);
+            int R = 4 + depth / 3 + std::min(4, (static_eval-beta) / 150);
 
             //adjust reduction to not exceed the depth
             R = std::min(depth, R);
