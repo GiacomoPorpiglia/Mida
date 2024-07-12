@@ -46,7 +46,7 @@ void updateKillers(MOVE newKillerMove) {
     killer_moves[0][ply] = newKillerMove;
 }
 
-void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList, int quietMoveCount) {
+void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList) {
 
     int bonus = std::min(2100, 300 * depth - 300);
     
@@ -55,7 +55,7 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
         *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
     }
 
-    for (int i = 0; i < quietMoveCount; i++) {
+    for (int i = 0; i < quietList->count; i++) {
         
         MOVE quiet_move = quietList->moves[i];
         if (quiet_move == best_move)

@@ -161,7 +161,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     board.calculateMoves(board.colorToMove, moveList);
 
     // sort moves
-    scoreMoves(moveList, 0);
+    scoreMoves(moveList, NULL_MOVE);
     MOVE move;
     int playedCount = 0; //counter of played moves
 
@@ -321,9 +321,8 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
         //reverse futility pruning
         evaluation = ttHit ? ttEntry->eval : static_eval;
-        if (depth < 9 && (evaluation - 200 * (depth- improving) ) >= beta)
-            return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
-                               // (it's  more accurate than the static one)
+        if (depth < 9 && (evaluation - 80 * (depth- improving) ) >= beta)
+            return evaluation; 
 
         //null move pruning
 
@@ -348,7 +347,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             chances are we won't find a beta cutoff and so we can use a bigger
             reduction factor.
             */
-            int R = 4 + depth / 3 + std::min(4, (static_eval-beta) / 150);
+            int R = 3 + depth / 3 + std::min(4, (static_eval-beta) / 150);
 
             //adjust reduction to not exceed the depth
             R = std::min(depth, R);
@@ -401,7 +400,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 // add second bonus to static evaluation
                 evaluation += 175;
                 // static evaluation indicates a fail-low node
-                if ((evaluation < beta) && (depth <= 2))
+                if (evaluation < beta)
                 {
                     // get quiscence score
                     new_eval = quiescence(alpha, beta, ss);
@@ -455,10 +454,10 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     else {
 
         MOVE move;
-        int  quietMoveCount=0;
         bool skip_quiet_moves = false;
 
         movesList quietList;
+        quietList.count = 0;
 
         for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
             pickNextMove(moveList, moveCount);
@@ -493,7 +492,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && !is_root && depth <= 7 && quietMoveCount >= LMP_table[improving][depth]) {
+                if (!pv_node && !is_root && depth <= 7 && quietList.count >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
@@ -540,8 +539,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             ss->move = move;
 
             if(is_quiet) {
-                quietList.moves[quietMoveCount] = move;
-                quietMoveCount++;
+                quietList.moves[quietList.count++] = move;
             }
 
 
@@ -563,7 +561,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     decrease reduction if the move has a high history score
                     (it's more likely to cause a cutoff, so we want to search it deeper)
                     */
-                    R -= history / 4000; 
+                    R -= history / 8192; 
 
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
@@ -635,7 +633,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         // update killer moves
                         updateKillers(move);
                         //update history score
-                        updateHistoryScore(move, best_move, depth, &quietList, quietMoveCount);
+                        updateHistoryScore(move, best_move, depth, &quietList);
                     }
                     return evaluation;
                 }

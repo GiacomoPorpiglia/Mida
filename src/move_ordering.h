@@ -51,7 +51,7 @@ extern int count;
 void enable_pv_scoring(movesList *moveList);
 
 void updateKillers(MOVE newKillerMove);
-void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList, int quietMoveCount);
+void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList);
 
 // score moves
 /*
