@@ -321,8 +321,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
         //reverse futility pruning
         evaluation = ttHit ? ttEntry->eval : static_eval;
-        if (depth < 9 && (evaluation - 80 * (depth- improving) ) >= beta)
-            return evaluation; 
+        if (depth < 9 && (evaluation - (depth-improving) * 80) >= beta)
+            return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
+                               // (it's  more accurate than the static one)
 
         //null move pruning
 
@@ -454,6 +455,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     else {
 
         MOVE move;
+
         bool skip_quiet_moves = false;
 
         movesList quietList;
