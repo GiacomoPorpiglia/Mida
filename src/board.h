@@ -29,6 +29,10 @@ public:
     const int KNIGHT_OFFSETS[8]  = {6, 15, 17, 10, -6, -15, -17, -10};
     uint64_t NOT_FILES_KNIGHT[8] = {GH_FILE, H_FILE, A_FILE, AB_FILE, AB_FILE, A_FILE, H_FILE, GH_FILE};
 
+    uint64_t attacked_squares[2][7];
+    uint64_t double_attacked_by_pawn[2];
+    uint64_t double_attacked[2];
+
     CH allPieces[64] = {
         -1, -1, -1, -1, -1, -1, -1, -1, 
         -1, -1, -1, -1, -1, -1, -1, -1, 

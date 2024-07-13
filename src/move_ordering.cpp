@@ -82,6 +82,7 @@ static inline int scoreMove(MOVE move) {
 
     int squareFrom = getSquareFrom(move);
     int squareTo = getSquareTo(move);
+    int pieceType = board.allPieces[squareFrom];
 
     // check if it's a capture
     if (isCapture(move))
@@ -91,7 +92,7 @@ static inline int scoreMove(MOVE move) {
     if (isEnPassant(move))
         return mvv_lva[P][P];
 
-    //if is capture, score it as a good SEE capture + MvV_LVA
+    //if is capture, score it as a good SEE capture + MVV_LVA
     if (isPromotion(move)) {
         int newPieceType = getNewPieceType(move);
         return mvv_lva[P][newPieceType] + WinningCaptureScore * (newPieceType==Q);
@@ -105,9 +106,27 @@ static inline int scoreMove(MOVE move) {
     // score 2nd killer move
     else if (killer_moves[1][ply] == move)
         return secondKillerScore;
+    else {
+        // else, score history move
+        int score = history_moves[board.colorToMove][board.allPieces[squareFrom]][squareTo];
+        
+        if(pieceType != P && pieceType != K) {
+            uint64_t danger;
+            if(pieceType==N || pieceType==B) 
+                danger = board.attacked_squares[!board.colorToMove][P];
+            else if(pieceType==R)
+                danger = board.attacked_squares[!board.colorToMove][P] | board.attacked_squares[!board.colorToMove][N] | board.attacked_squares[!board.colorToMove][B];
+             else // queen
+                danger = board.attacked_squares[!board.colorToMove][N] | board.attacked_squares[!board.colorToMove][B] | board.attacked_squares[!board.colorToMove][R];
 
-    // else, score history move
-    return history_moves[board.colorToMove][board.allPieces[squareFrom]][squareTo];
+            if(get_bit(danger, squareFrom))
+                score += 16384;
+            if(get_bit(danger, squareTo))
+                score -= 16384;
+        }
+
+        return score;
+    }
 
     return 0;
 }
@@ -144,7 +163,7 @@ void pickNextMove(movesList *moveList, int moveNum) {
 */
 void scoreMoves(movesList *moveList, MOVE best_move) {
     MOVE move;
-    
+    board.getTotalAttackedSquares(board.get_occupancy());
     for (int count = 0; count < moveList->count; count++) {
         move = moveList->moves[count];
         if(best_move == move) 

@@ -131,21 +131,25 @@ static inline int getSquareTo(MOVE move)
 
 static inline bool isPromotion(MOVE move)
 {
+    if(move==NULL_MOVE) return false;
     return (getNewPieceType(move) != board.allPieces[getSquareFrom(move)]);
 }
 
 static inline bool isCastle(MOVE move)
 {
+    if(move==NULL_MOVE) return false;
     return (getNewPieceType(move) == K && abs(getSquareFrom(move) - getSquareTo(move)) == 2);
 }
 
 static inline bool isCapture(MOVE move)
 {
+    if(move==NULL_MOVE) return false;
     return board.allPieces[getSquareTo(move)] != NOPIECE;
 }
 
 static inline bool isEnPassant(MOVE move)
 {
+    if(move==NULL_MOVE) return false;
     int from = getSquareFrom(move);
     int to = getSquareTo(move);
     return (board.allPieces[from] == P && board.allPieces[to] == NOPIECE && abs(from - to) != 8 && abs(from - to) != 16);

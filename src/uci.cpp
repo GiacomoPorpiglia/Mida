@@ -446,7 +446,7 @@ void uci_loop()
 
     char input[2000];
 
-    printf("id name MIDA 2.3.1\n");
+    printf("id name MIDA 2.4\n");
     printf("id author Giacomo Porpiglia\n");
     printf("uciok\n");
 

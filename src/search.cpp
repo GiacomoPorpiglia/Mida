@@ -115,7 +115,7 @@ static inline bool repetitionDetection() {
 
 static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     int best_score = -MATE_VALUE;
-    int standing_pat, evaluation;
+    int evaluation;
     MOVE best_move;
     // every 2047 nodes
     if ((nodes & 2047) == 0)
@@ -131,19 +131,6 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
         return evaluate<false>();
     
     bool pv_node = (beta - alpha) > 1;
-
-    standing_pat = evaluate<true>();
-
-    ss->static_eval = standing_pat;
-
-    //Delta pruning
-    if(standing_pat < alpha-pieceValues[Q]) return alpha;
-
-    if (standing_pat > alpha) {
-        if (standing_pat >= beta)
-            return beta;
-        alpha = standing_pat;
-    }
     
     tt* ttEntry = readHashEntry(best_move);
 
@@ -155,6 +142,22 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
             return evaluation;
     }
 
+    evaluation = evaluate<true>();
+
+    ss->static_eval = evaluation;
+
+    // Delta pruning
+    if (evaluation < alpha - pieceValues[Q])
+        return alpha;
+
+
+    //standing pat
+    if (evaluation > alpha)
+    {
+        if (evaluation >= beta)
+            return beta;
+        alpha = evaluation;
+    }
 
     movesList *moveList = &mGen[ply];
 
@@ -165,7 +168,7 @@ static inline int quiescence(int alpha, int beta, SearchStack *ss) {
     MOVE move;
     int playedCount = 0; //counter of played moves
 
-    best_score = standing_pat;
+    best_score = evaluation;
     best_move = NULL_MOVE; 
 
     for (int moveCount = 0; moveCount < moveList->count; moveCount++) {
@@ -248,7 +251,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     // define hash flag
     int hash_f = HASH_FLAG_ALPHA;
 
-    MOVE best_move = 0;
+    MOVE best_move = NULL_MOVE;
 
     // if repetition, return drawing score
     if (ply && repetitionDetection())
@@ -524,7 +527,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if(depth <= 8 && !see(move, -15*depth*depth))
                     continue;  
             }
-
 
 
             // Copy the hash key to restore it after the search, together with unplay move

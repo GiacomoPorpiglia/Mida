@@ -9,9 +9,7 @@
 #include "game_constants.h"
 
 
-uint64_t attacked_squares[2][7];
-uint64_t double_attacked_by_pawn[2];
-uint64_t double_attacked[2];
+
 
 
 int nnue_pieces[33];
