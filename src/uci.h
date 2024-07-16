@@ -9,6 +9,7 @@
 #include "perft.h"
 #include "hashing.h"
 #include "search.h"
+#include "types.h"
 #ifdef _WIN32
 #include <windows.h>
 #else

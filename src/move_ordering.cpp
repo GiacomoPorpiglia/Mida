@@ -11,7 +11,8 @@ const int mvv_lva[6][6] = {
     604,504,404,304,204,104,
     605,505,405,305,205,105,
 };
-int history_moves[2][6][max_ply] = {0};
+int history_moves[2][6][64] = {0};
+MOVE counter_history_moves[2][64][64] = {0};
 MOVE killer_moves[2][max_ply];
 int pv_length[max_ply];
 
@@ -67,8 +68,13 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
     }
 }
 
+// basic counter history heuristic
+void updateCounterHistory(MOVE move, SearchStack* ss) {
 
-static inline int scoreMove(MOVE move) {
+    counter_history_moves[board.colorToMove][getSquareFrom(ss->prevMove)][getSquareTo(ss->prevMove)] = move;
+}
+
+static inline int scoreMove(MOVE move, SearchStack* ss) {
 
     // if PV move scoring is allowed and if we are scoring PV move
     if (score_pv && pv_table[0][ply] == move) {
@@ -80,55 +86,77 @@ static inline int scoreMove(MOVE move) {
 
     }
 
-    int squareFrom = getSquareFrom(move);
-    int squareTo = getSquareTo(move);
-    int pieceType = board.allPieces[squareFrom];
+    int squareFrom   = getSquareFrom(move);
+    int squareTo     = getSquareTo(move);
+    int pieceType    = board.allPieces[squareFrom];
+    int newPieceType = getNewPieceType(move);
+
+    int score = 0;
 
     // check if it's a capture
     if (isCapture(move))
-        return mvv_lva[board.allPieces[squareFrom]][board.allPieces[squareTo]] + WinningCaptureScore * see(move, -105);
+        score += mvv_lva[pieceType][board.allPieces[squareTo]] + WinningCaptureScore * see(move, -105);
 
     // special case: en passant (we consider it as pawn takes pawn)
-    if (isEnPassant(move))
-        return mvv_lva[P][P];
+    else if (isEnPassant(move))
+        score += mvv_lva[P][P];
 
     //if is capture, score it as a good SEE capture + MVV_LVA
-    if (isPromotion(move)) {
-        int newPieceType = getNewPieceType(move);
-        return mvv_lva[P][newPieceType] + WinningCaptureScore * (newPieceType==Q);
+    else if (isPromotion(move)) {
+        score += mvv_lva[P][newPieceType] + WinningCaptureScore * (newPieceType==Q);
     }
 
     // score quiet move
-
-    // score 1st killer move
-    if (killer_moves[0][ply] == move)
-        return firstKillerScore;
-    // score 2nd killer move
-    else if (killer_moves[1][ply] == move)
-        return secondKillerScore;
     else {
-        // else, score history move
-        int score = history_moves[board.colorToMove][board.allPieces[squareFrom]][squareTo];
-        
-        if(pieceType != P && pieceType != K) {
-            uint64_t danger;
-            if(pieceType==N || pieceType==B) 
-                danger = board.attacked_squares[!board.colorToMove][P];
-            else if(pieceType==R)
-                danger = board.attacked_squares[!board.colorToMove][P] | board.attacked_squares[!board.colorToMove][N] | board.attacked_squares[!board.colorToMove][B];
-             else // queen
-                danger = board.attacked_squares[!board.colorToMove][N] | board.attacked_squares[!board.colorToMove][B] | board.attacked_squares[!board.colorToMove][R];
+        // score 1st killer move
+        if (killer_moves[0][ply] == move)
+            score += firstKillerScore;
+        // score 2nd killer move
+        else if (killer_moves[1][ply] == move)
+            score += secondKillerScore;
+        else {
+            // else, score history move
+            score += history_moves[board.colorToMove][pieceType][squareTo];
 
-            if(get_bit(danger, squareFrom))
-                score += 16384;
-            if(get_bit(danger, squareTo))
-                score -= 16384;
+            //counter history bonus
+            if(counter_history_moves[board.colorToMove][getSquareFrom(ss->prevMove)][getSquareTo(ss->prevMove)] == move) {
+                score += MAX_COUNTER_HISTORY;
+            }
+
+            //add bonus/malus if the quiet move is going from/to a dengerous square 
+            //(meaning a square attacked by a lower-value piece)
+            if(pieceType != P && pieceType != K) {
+                uint64_t threatenedByPawn  = board.attacked_squares[!board.colorToMove][P];
+                uint64_t threatenedByMinor = threatenedByPawn | 
+                                             board.attacked_squares[!board.colorToMove][N] |
+                                             board.attacked_squares[!board.colorToMove][B];
+                uint64_t threatenedByRook  = threatenedByMinor | 
+                                             board.attacked_squares[!board.colorToMove][R];
+
+                if(pieceType == B || pieceType == N) {
+                    if (get_bit(threatenedByPawn, squareFrom))
+                        score += dangerSquareScore/1.4;
+                    if (get_bit(threatenedByPawn, squareTo))
+                        score -= dangerSquareScore/1.4;
+                }
+                else if (pieceType == R) {
+                    if (get_bit(threatenedByMinor, squareFrom))
+                        score += dangerSquareScore/1.2;
+                    if (get_bit(threatenedByMinor, squareTo))
+                        score -= dangerSquareScore/1.2;
+                }
+                else if (pieceType == Q)
+                {
+                    if (get_bit(threatenedByRook, squareFrom))
+                        score += dangerSquareScore;
+                    if (get_bit(threatenedByRook, squareTo))
+                        score -= dangerSquareScore;
+                }
+            }
         }
-
-        return score;
     }
 
-    return 0;
+    return score;
 }
 
 MOVE tempMove;
@@ -137,7 +165,7 @@ int tempScore, current_move, next_move, max_score, h, i, j, x, y;
 void pickNextMove(movesList *moveList, int moveNum) {
     MOVE temp;
     int index;
-    int bestscore = -inf;
+    int bestscore = -MAX_MOVE_SCORE;
     int bestnum = moveNum;
     int tempScore;
 
@@ -148,11 +176,11 @@ void pickNextMove(movesList *moveList, int moveNum) {
         }
     }
 
-    temp = moveList->moves[moveNum];
-    tempScore = moveList->move_scores[moveNum];
-    moveList->moves[moveNum] = moveList->moves[bestnum]; // Sort the highest score move to highest.
+    temp                           = moveList->moves[moveNum];
+    tempScore                      = moveList->move_scores[moveNum];
+    moveList->moves[moveNum]       = moveList->moves[bestnum]; // Sort the highest score move to highest.
     moveList->move_scores[moveNum] = moveList->move_scores[bestnum];
-    moveList->moves[bestnum] = temp;
+    moveList->moves[bestnum]       = temp;
     moveList->move_scores[bestnum] = tempScore;
 }
 
@@ -161,7 +189,7 @@ void pickNextMove(movesList *moveList, int moveNum) {
    one by one ( by the pickNextMove function ) whenever we need a new move to search: this approach is faster the more you cut, because
    you will need to pick a small number of moves compared to all the moves of the position
 */
-void scoreMoves(movesList *moveList, MOVE best_move) {
+void scoreMoves(movesList *moveList, MOVE best_move, SearchStack* ss) {
     MOVE move;
     board.getTotalAttackedSquares(board.get_occupancy());
     for (int count = 0; count < moveList->count; count++) {
@@ -169,6 +197,6 @@ void scoreMoves(movesList *moveList, MOVE best_move) {
         if(best_move == move) 
             moveList->move_scores[count] = bestMoveScore;
         else 
-            moveList->move_scores[count] = scoreMove(move);
+            moveList->move_scores[count] = scoreMove(move, ss);
     }
 }

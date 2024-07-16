@@ -59,12 +59,6 @@ const int NOPIECE  = -1;
 #include <stdint.h>
 #include <bit>
 
-typedef struct
-{
-    MOVE moves[MAX_MOVES];
-    int move_scores[MAX_MOVES];
-    int count;
-} movesList;
 
 // not a constant. it is here because it is needed everywhere, and this file is imported everywhere.
 //

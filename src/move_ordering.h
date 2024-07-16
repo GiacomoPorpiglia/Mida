@@ -5,14 +5,21 @@
 #include "constants.h"
 #include "game_constants.h"
 #include "bitboard.h"
-
+#include "magic_bitboards.h"
 #include "board_declaration.h"
+#include "types.h"
+
+#define MAX_MOVE_SCORE      10000000
 
 #define bestMoveScore       3000000
 #define pvMoveScore         2000000
 #define WinningCaptureScore 1000000
 #define firstKillerScore    900000
 #define secondKillerScore   800000
+
+#define MAX_COUNTER_HISTORY 600000
+
+#define dangerSquareScore   8192
 
 #define MAX_HISTORY 16384
 
@@ -37,8 +44,8 @@ extern const int mvv_lva[6][6];
 extern MOVE killer_moves[2][max_ply];
 
 //[color][piece type][ move target square]
-extern int history_moves[2][6][max_ply];
-
+extern int history_moves[2][6][64];
+extern MOVE counter_history_moves[2][64][64];
 // PV length
 extern int pv_length[max_ply];
 
@@ -52,6 +59,7 @@ void enable_pv_scoring(movesList *moveList);
 
 void updateKillers(MOVE newKillerMove);
 void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList);
+void updateCounterHistory(MOVE move, SearchStack* ss);
 
 // score moves
 /*
@@ -63,12 +71,12 @@ MOVE ORDERING
 5- HISTORY MOVES
 6- UNSORTED MOVES
 */
-static inline int scoreMove(MOVE move);
+static inline int scoreMove(MOVE move, SearchStack* ss);
 // extern int move_scores[256];
 // sort moves to make search more efficient, by searching first captures, killers and history moves, and principle variation (PV) moves
 
 extern MOVE tempMove;
 extern int tempScore, current_move, next_move, max_score, h, i, j, x, y;
-void scoreMoves(movesList *moveList, MOVE best_move);
+void scoreMoves(movesList *moveList, MOVE best_move, SearchStack* ss);
 void pickNextMove(movesList *moveList, int moveNum);
 #endif

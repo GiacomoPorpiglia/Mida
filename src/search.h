@@ -10,6 +10,7 @@
 #include "evaluate.h"
 #include "move_ordering.h"
 #include "uci.h"
+#include "types.h"
 
 extern int nodes;
 
@@ -18,10 +19,6 @@ extern int LMP_table[2][max_ply];
 extern int LMRBase;
 extern int LMRDivision;
 
-typedef struct {
-    int static_eval{};
-    MOVE move{};
-} SearchStack;
 
 extern movesList mGen[max_ply];
 extern SearchStack searchStack[max_ply + 1];

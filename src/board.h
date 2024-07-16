@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include "constants.h"
-
+#include "types.h"
 
 
 using namespace std;
