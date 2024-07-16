@@ -14,8 +14,8 @@ SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][max_ply];
 int LMP_table[2][max_ply];
-int LMRBase = 75;
-int LMRDivision = 300;
+int LMRBase = 50;
+int LMRDivision = 275;
 
 void initSearch() {
     //Init LMR table
