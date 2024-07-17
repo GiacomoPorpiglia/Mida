@@ -319,7 +319,6 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     bool improving = ply >= 2 && !in_check && (ss->static_eval > (ss - 2)->static_eval);
 
     movesList *moveList = &mGen[ply];
-    bool are_moves_calculated = false;
 
     ss->prevMove = ply > 0 ? (ss - 1)->move : NULL_MOVE;
 
@@ -383,9 +382,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             
         }
 
-        //razoring
-
-        if (depth <= 2)
+        // razoring
+        
+        if (depth <= 3)
         {
             // add first bonus
             evaluation = static_eval + 125;
@@ -405,7 +404,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     return (new_eval > evaluation) ? new_eval : evaluation;
                 }
                 // add second bonus to static evaluation
-                evaluation += 175;
+                evaluation += 175 + 125*(depth==3);
                 // static evaluation indicates a fail-low node
                 if (evaluation < beta)
                 {
@@ -436,9 +435,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
     }
 
     // calculate moves
-    if(!are_moves_calculated) {
-        board.calculateMoves(board.colorToMove, moveList);
-    }
+    board.calculateMoves(board.colorToMove, moveList);
     
     //if no moves are availble, it's either checkmate or stalemate
     if (moveList->count == 0) {
