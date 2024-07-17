@@ -353,7 +353,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             chances are we won't find a beta cutoff and so we can use a bigger
             reduction factor.
             */
-            int R = 3 + depth / 3 + std::min(3, (static_eval-beta) / 180);
+            int R = 3 + depth / 3 + std::min(4, (static_eval-beta) / 150);
 
             //adjust reduction to not exceed the depth
             R = std::min(depth, R);
