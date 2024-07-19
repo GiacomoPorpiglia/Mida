@@ -44,8 +44,7 @@ extern const int mvv_lva[6][6];
 extern MOVE killer_moves[2][max_ply];
 
 //[color][piece type][ move target square]
-extern int history_moves[2][6][64];
-extern MOVE counter_history_moves[2][64][64];
+extern int16_t history_moves[2][6][64];
 // PV length
 extern int pv_length[max_ply];
 
@@ -58,8 +57,8 @@ extern int count;
 void enable_pv_scoring(movesList *moveList);
 
 void updateKillers(MOVE newKillerMove);
-void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList);
-void updateCounterHistory(MOVE move, SearchStack* ss);
+void updateHistoryScore(MOVE best_move, int depth, movesList* quietList, SearchStack* ss);
+int get_history(MOVE move, SearchStack* ss, int side, int depth);
 
 // score moves
 /*

@@ -11,8 +11,7 @@ const int mvv_lva[6][6] = {
     604,504,404,304,204,104,
     605,505,405,305,205,105,
 };
-int history_moves[2][6][64] = {0};
-MOVE counter_history_moves[2][64][64] = {0};
+int16_t history_moves[2][6][64] = {0};
 MOVE killer_moves[2][max_ply];
 int pv_length[max_ply];
 
@@ -47,13 +46,27 @@ void updateKillers(MOVE newKillerMove) {
     killer_moves[0][ply] = newKillerMove;
 }
 
-void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietList) {
+void updateHistoryScore(MOVE best_move, int depth, movesList* quietList, SearchStack* ss) {
 
-    int bonus = std::min(2100, 300 * depth - 300);
+    int bonus = std::min(2100, 300 * depth -300);
     
     if (depth > 2) {
-        int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(move)]][getSquareTo(move)];
+
+        int pieceType = board.allPieces[getSquareFrom(best_move)];
+        int squareTo  = getSquareTo(best_move);
+
+        //update history
+        int16_t *history = &history_moves[board.colorToMove][pieceType][squareTo];
         *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
+        int16_t *cont_history;
+
+        //update continuation history
+
+        cont_history = &((ss - 1)->continuation_history[pieceType][squareTo]);
+        *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+
+        cont_history = &((ss - 2)->continuation_history[pieceType][squareTo]);
+        *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
     }
 
     for (int i = 0; i < quietList->count; i++) {
@@ -61,17 +74,40 @@ void updateHistoryScore(MOVE move, MOVE best_move, int depth, movesList* quietLi
         MOVE quiet_move = quietList->moves[i];
         if (quiet_move == best_move)
             continue;
+
+        int pieceType = board.allPieces[getSquareFrom(quiet_move)];
+        int squareTo = getSquareTo(quiet_move);
         // penalize history of moves which didn't cause beta-cutoffs
-        int *history = &history_moves[board.colorToMove][board.allPieces[getSquareFrom(quiet_move)]][getSquareTo(quiet_move)];
+        int16_t *history = &history_moves[board.colorToMove][pieceType][squareTo];
         
         *history += -bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
+
+        int16_t *cont_history;
+
+        // update continuation history
+
+        if(depth >= 1) {
+            cont_history = &((ss - 1)->continuation_history[pieceType][squareTo]);
+            *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        if(depth >= 2) {
+            cont_history = &((ss - 2)->continuation_history[pieceType][squareTo]);
+            *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
     }
 }
 
-// basic counter history heuristic
-void updateCounterHistory(MOVE move, SearchStack* ss) {
+int get_history(MOVE move, SearchStack* ss, int side, int depth) {
+    int pieceType = board.allPieces[getSquareFrom(move)];
+    int to        = getSquareTo(move);
+    int history = history_moves[side][pieceType][to];
+    if(depth >= 1)
+        history += (ss - 1)->continuation_history[pieceType][to];
+    if(depth >= 2)
+        history += (ss - 2)->continuation_history[pieceType][to];
 
-    counter_history_moves[board.colorToMove][getSquareFrom(ss->prevMove)][getSquareTo(ss->prevMove)] = move;
+    return history;
+ 
 }
 
 static inline int scoreMove(MOVE move, SearchStack* ss) {
@@ -118,9 +154,12 @@ static inline int scoreMove(MOVE move, SearchStack* ss) {
             // else, score history move
             score += history_moves[board.colorToMove][pieceType][squareTo];
 
-            //counter history bonus
-            if(counter_history_moves[board.colorToMove][getSquareFrom(ss->prevMove)][getSquareTo(ss->prevMove)] == move) {
-                score += MAX_COUNTER_HISTORY;
+            if((ss-1)->move) {
+                score += (ss - 1)->continuation_history[pieceType][squareTo];
+            }
+
+            if((ss-2)->move) {
+                score += (ss - 2)->continuation_history[pieceType][squareTo];
             }
 
             //add bonus/malus if the quiet move is going from/to a dengerous square 

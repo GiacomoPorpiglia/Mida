@@ -14,6 +14,9 @@ typedef struct
     int static_eval{};
     MOVE move{};
     MOVE prevMove{};
+
+    int16_t continuation_history[6][64];
+
 } SearchStack;
 
 #endif

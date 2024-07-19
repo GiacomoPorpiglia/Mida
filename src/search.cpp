@@ -14,8 +14,9 @@ SearchStack searchStack[max_ply + 1];
 
 int LMR_table[max_ply][max_ply];
 int LMP_table[2][max_ply];
-int LMRBase = 50;
-int LMRDivision = 275;
+int LMRBase = 75;
+int LMRDivision = 300;
+int futility_pruning_history_limit[2] = {14000, 6000};
 
 void initSearch() {
     //Init LMR table
@@ -30,8 +31,8 @@ void initSearch() {
     LMR_table[0][0] = LMR_table[1][0] =  LMR_table[0][1] = 0;
 
     for(int depth = 1; depth < 64; depth++) {
-        LMP_table[0][depth] = 2.2 +  2.2 * depth * depth / 4.5;
-        LMP_table[1][depth] = 3.6 +  3.6 * depth * depth / 4.5;
+        LMP_table[0][depth] = 2.5 +  2.0 * depth * depth / 4.5;
+        LMP_table[1][depth] = 4.0 +  4.0 * depth * depth / 4.5;
     }
 }
 
@@ -353,7 +354,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             chances are we won't find a beta cutoff and so we can use a bigger
             reduction factor.
             */
-            int R = 3 + depth / 3 + std::min(4, (static_eval-beta) / 150);
+            int R = 3 + depth / 3 + std::min(3, (static_eval-beta) / 180);
 
             //adjust reduction to not exceed the depth
             R = std::min(depth, R);
@@ -384,7 +385,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
         // razoring
         
-        if (depth <= 3)
+        if (depth <= 2)
         {
             // add first bonus
             evaluation = static_eval + 125;
@@ -404,7 +405,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     return (new_eval > evaluation) ? new_eval : evaluation;
                 }
                 // add second bonus to static evaluation
-                evaluation += 175 + 125*(depth==3);
+                evaluation += 175;
                 // static evaluation indicates a fail-low node
                 if (evaluation < beta)
                 {
@@ -482,7 +483,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
 
             //get history score of the move
-            int history = history_moves[board.colorToMove][oldPieceType][getSquareTo(move)];
+            int history = get_history(move, ss, board.colorToMove, depth);
 
             //skip quiet moves
             if (is_quiet && skip_quiet_moves)
@@ -497,7 +498,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and we have already searched 
                 enough moves before, we can skip it.
                 */
-                if (!pv_node && !is_root && depth <= 9 && quietList.count >= LMP_table[improving][depth]) {
+                if (!pv_node && !is_root && depth <= 7 && quietList.count >= LMP_table[improving][depth]) {
                     skip_quiet_moves = true;
                     continue;
                 }
@@ -511,13 +512,12 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and the position has low potential 
                 of raising alpha, we can skip all following quiet moves
                 */
-                if (LMRdepth <= 6 && (static_eval + 215 + 70 * depth) <= alpha)
-                {
+                if (LMRdepth <= 6 && history < futility_pruning_history_limit[improving] && (static_eval + 215 + 70 * depth) <= alpha) {
                     skip_quiet_moves = true;
                 }
 
                 //SEE pruning for quiets
-                if (depth <= 10 && !see(move, -70 * depth))
+                if (depth <= 8 && !see(move, -70 * depth))
                     continue;
                 
             }
@@ -525,7 +525,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             else {
                 //SEE pruning for non-quiet moves: if the move leads to a losing exchange, we can skip it
                 //Also, we give a threshold that increases with depth: the idea is that if we are at a high depth (meaning near to the root), even if we lose some material in the exchange we can't be sure enough to prune that branch completely (unless we lose a lot, like a queen) because we are nowhere near to the leaf nodes.
-                if(depth <= 10 && !see(move, -15*depth*depth))
+                if(depth <= 8 && !see(move, -15*depth*depth))
                     continue;  
             }
 
@@ -635,9 +635,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         // update killer moves
                         updateKillers(move);
                         //update history score
-                        updateHistoryScore(move, best_move, depth, &quietList);
-                        if(ply >= 1 && ss->prevMove != NULL_MOVE)
-                            updateCounterHistory(move, ss);
+                        updateHistoryScore(best_move, depth, &quietList, ss);
                     }
                     return evaluation;
                 }
@@ -708,9 +706,11 @@ void search_position(int maxDepth) {
     memset(killer_moves, 0, sizeof(killer_moves));
     memset(history_moves, 0, sizeof(history_moves));
 
-    memset(counter_history_moves, 0, sizeof(counter_history_moves));
     memset(pv_table, 0, sizeof(pv_table));
     memset(pv_length, 0, sizeof(pv_length));
+    for(int i = 0; i < max_ply+1; i++) {
+        memset(searchStack[i].continuation_history, 0, sizeof(searchStack[i].continuation_history));
+    }
     currentAge++; // increase currentAge for hash table at each new search
 
     int alpha = -inf;

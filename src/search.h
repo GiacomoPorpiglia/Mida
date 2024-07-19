@@ -19,7 +19,7 @@ extern int LMP_table[2][max_ply];
 extern int LMRBase;
 extern int LMRDivision;
 
-
+extern int futility_pruning_history_limit[2];
 extern movesList mGen[max_ply];
 extern SearchStack searchStack[max_ply + 1];
 
