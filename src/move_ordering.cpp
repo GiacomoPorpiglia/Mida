@@ -189,37 +189,6 @@ static inline int scoreMove(MOVE move, SearchStack* ss) {
             if ((ss - 6)->move) {
                 score += (ss - 6)->continuation_history[board.colorToMove][pieceType][squareTo];
             }
-
-            //add bonus/malus if the quiet move is going from/to a dengerous square 
-            //(meaning a square attacked by a lower-value piece)
-            // if(pieceType != P && pieceType != K) {
-            //     uint64_t threatenedByPawn  = board.attacked_squares[!board.colorToMove][P];
-            //     uint64_t threatenedByMinor = threatenedByPawn | 
-            //                                  board.attacked_squares[!board.colorToMove][N] |
-            //                                  board.attacked_squares[!board.colorToMove][B];
-            //     uint64_t threatenedByRook  = threatenedByMinor | 
-            //                                  board.attacked_squares[!board.colorToMove][R];
-
-            //     if(pieceType == B || pieceType == N) {
-            //         if (get_bit(threatenedByPawn, squareFrom))
-            //             score += dangerSquareScore/1.4;
-            //         if (get_bit(threatenedByPawn, squareTo))
-            //             score -= dangerSquareScore/1.4;
-            //     }
-            //     else if (pieceType == R) {
-            //         if (get_bit(threatenedByMinor, squareFrom))
-            //             score += dangerSquareScore/1.2;
-            //         if (get_bit(threatenedByMinor, squareTo))
-            //             score -= dangerSquareScore/1.2;
-            //     }
-            //     else if (pieceType == Q)
-            //     {
-            //         if (get_bit(threatenedByRook, squareFrom))
-            //             score += dangerSquareScore;
-            //         if (get_bit(threatenedByRook, squareTo))
-            //             score -= dangerSquareScore;
-            //     }
-            // }
         }
     }
 

@@ -17,10 +17,6 @@
 #define firstKillerScore    900000
 #define secondKillerScore   800000
 
-#define MAX_COUNTER_HISTORY 600000
-
-#define dangerSquareScore   8192
-
 #define MAX_HISTORY 16384
 
 // most valuable victim - least valuable attacker table

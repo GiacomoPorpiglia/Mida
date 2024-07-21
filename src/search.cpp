@@ -16,7 +16,6 @@ int LMR_table[max_ply][max_ply];
 int LMP_table[2][max_ply];
 int LMRBase = 75;
 int LMRDivision = 300;
-int futility_pruning_history_limit[2] = {14000, 6000};
 
 void initSearch() {
     //Init LMR table
@@ -512,7 +511,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and the position has low potential 
                 of raising alpha, we can skip all following quiet moves
                 */
-                if (LMRdepth <= 6 && history < futility_pruning_history_limit[improving] && (static_eval + 215 + 70 * depth) <= alpha) {
+                if (LMRdepth <= 6 && (static_eval + 215 + 70 * depth) <= alpha) {
                     skip_quiet_moves = true;
                 }
 
@@ -563,7 +562,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R += !improving; // increase reduction if we are not improving
                     R += is_quiet && !see(move, -50 * depth);   // we increase the reduction if the move is quiet, because they are less likely to be the best move
 
-                    R -= history / 10000;                    
+                    R -= history / 10000;
 
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 
