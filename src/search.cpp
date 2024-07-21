@@ -327,7 +327,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
         //reverse futility pruning
         evaluation = ttHit ? ttEntry->eval : static_eval;
-        if (depth < 9 && (evaluation - (depth-improving) * 80) >= beta)
+        if (depth < 9 && (evaluation - depth * 80) >= beta)
             return evaluation; // return the evaluation, which could be the one from TT if we had a hit 
                                // (it's  more accurate than the static one)
 
@@ -483,7 +483,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             bool is_quiet = (!isCapture(move) && !isPromotion(move) && !isEnPassant(move));
 
             //get history score of the move
-            int history = get_history(move, ss, board.colorToMove, depth);
+            int history = get_history(move, ss, board.colorToMove, ply);
 
             //skip quiet moves
             if (is_quiet && skip_quiet_moves)
@@ -563,7 +563,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R += !improving; // increase reduction if we are not improving
                     R += is_quiet && !see(move, -50 * depth);   // we increase the reduction if the move is quiet, because they are less likely to be the best move
 
-                    R -= history / 4000;                    
+                    R -= history / 10000;                    
 
                     R -= 2 * isKillerMove; // if the move is a killer move, we want to search it deeper, therefore we make the reduction smaller
 

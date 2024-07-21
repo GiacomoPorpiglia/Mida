@@ -58,15 +58,25 @@ void updateHistoryScore(MOVE best_move, int depth, movesList* quietList, SearchS
         //update history
         int16_t *history = &history_moves[board.colorToMove][pieceType][squareTo];
         *history += bonus - ((*history) * std::abs(bonus) / MAX_HISTORY);
-        int16_t *cont_history;
 
         //update continuation history
-
-        cont_history = &((ss - 1)->continuation_history[pieceType][squareTo]);
-        *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
-
-        cont_history = &((ss - 2)->continuation_history[pieceType][squareTo]);
-        *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        int16_t *cont_history;
+        if((ss - 1)->move) {
+            cont_history = &((ss - 1)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        if((ss - 2)->move) {
+            cont_history = &((ss - 2)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        if ((ss - 4)->move) {
+            cont_history = &((ss - 4)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        if ((ss - 6)->move) {
+            cont_history = &((ss - 6)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
     }
 
     for (int i = 0; i < quietList->count; i++) {
@@ -86,25 +96,38 @@ void updateHistoryScore(MOVE best_move, int depth, movesList* quietList, SearchS
 
         // update continuation history
 
-        if(depth >= 1) {
-            cont_history = &((ss - 1)->continuation_history[pieceType][squareTo]);
+        if((ss - 1)->move) {
+            cont_history = &((ss - 1)->continuation_history[board.colorToMove][pieceType][squareTo]);
             *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
         }
-        if(depth >= 2) {
-            cont_history = &((ss - 2)->continuation_history[pieceType][squareTo]);
+        if((ss - 2)->move) {
+            cont_history = &((ss - 2)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        
+        if((ss - 4)->move) {
+            cont_history = &((ss - 4)->continuation_history[board.colorToMove][pieceType][squareTo]);
+            *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
+        }
+        if((ss - 6)->move) {
+            cont_history = &((ss - 6)->continuation_history[board.colorToMove][pieceType][squareTo]);
             *cont_history += -bonus - ((*cont_history) * std::abs(bonus) / MAX_HISTORY);
         }
     }
 }
 
-int get_history(MOVE move, SearchStack* ss, int side, int depth) {
+int get_history(MOVE move, SearchStack* ss, int side, int ply) {
     int pieceType = board.allPieces[getSquareFrom(move)];
     int to        = getSquareTo(move);
-    int history = history_moves[side][pieceType][to];
-    if(depth >= 1)
-        history += (ss - 1)->continuation_history[pieceType][to];
-    if(depth >= 2)
-        history += (ss - 2)->continuation_history[pieceType][to];
+    int history = (int) history_moves[side][pieceType][to];
+    if (ply >= 1 && (ss - 1)->move)
+        history += (int) (ss - 1)->continuation_history[side][pieceType][to];
+    if (ply >= 2 && (ss - 2)->move)
+        history += (int)(ss - 2)->continuation_history[side][pieceType][to];
+    if (ply >= 4 && (ss - 4)->move)
+        history += (int)(ss - 4)->continuation_history[side][pieceType][to];
+    if (ply >= 6 && (ss - 6)->move)
+        history += (int)(ss - 6)->continuation_history[side][pieceType][to];
 
     return history;
  
@@ -154,44 +177,49 @@ static inline int scoreMove(MOVE move, SearchStack* ss) {
             // else, score history move
             score += history_moves[board.colorToMove][pieceType][squareTo];
 
-            if((ss-1)->move) {
-                score += (ss - 1)->continuation_history[pieceType][squareTo];
+            if((ss - 1)->move) {
+                score += (ss - 1)->continuation_history[board.colorToMove][pieceType][squareTo];
             }
-
-            if((ss-2)->move) {
-                score += (ss - 2)->continuation_history[pieceType][squareTo];
+            if((ss - 2)->move) {
+                score += (ss - 2)->continuation_history[board.colorToMove][pieceType][squareTo];
+            }
+            if ((ss - 4)->move) {
+                score += (ss - 4)->continuation_history[board.colorToMove][pieceType][squareTo];
+            }
+            if ((ss - 6)->move) {
+                score += (ss - 6)->continuation_history[board.colorToMove][pieceType][squareTo];
             }
 
             //add bonus/malus if the quiet move is going from/to a dengerous square 
             //(meaning a square attacked by a lower-value piece)
-            if(pieceType != P && pieceType != K) {
-                uint64_t threatenedByPawn  = board.attacked_squares[!board.colorToMove][P];
-                uint64_t threatenedByMinor = threatenedByPawn | 
-                                             board.attacked_squares[!board.colorToMove][N] |
-                                             board.attacked_squares[!board.colorToMove][B];
-                uint64_t threatenedByRook  = threatenedByMinor | 
-                                             board.attacked_squares[!board.colorToMove][R];
+            // if(pieceType != P && pieceType != K) {
+            //     uint64_t threatenedByPawn  = board.attacked_squares[!board.colorToMove][P];
+            //     uint64_t threatenedByMinor = threatenedByPawn | 
+            //                                  board.attacked_squares[!board.colorToMove][N] |
+            //                                  board.attacked_squares[!board.colorToMove][B];
+            //     uint64_t threatenedByRook  = threatenedByMinor | 
+            //                                  board.attacked_squares[!board.colorToMove][R];
 
-                if(pieceType == B || pieceType == N) {
-                    if (get_bit(threatenedByPawn, squareFrom))
-                        score += dangerSquareScore/1.4;
-                    if (get_bit(threatenedByPawn, squareTo))
-                        score -= dangerSquareScore/1.4;
-                }
-                else if (pieceType == R) {
-                    if (get_bit(threatenedByMinor, squareFrom))
-                        score += dangerSquareScore/1.2;
-                    if (get_bit(threatenedByMinor, squareTo))
-                        score -= dangerSquareScore/1.2;
-                }
-                else if (pieceType == Q)
-                {
-                    if (get_bit(threatenedByRook, squareFrom))
-                        score += dangerSquareScore;
-                    if (get_bit(threatenedByRook, squareTo))
-                        score -= dangerSquareScore;
-                }
-            }
+            //     if(pieceType == B || pieceType == N) {
+            //         if (get_bit(threatenedByPawn, squareFrom))
+            //             score += dangerSquareScore/1.4;
+            //         if (get_bit(threatenedByPawn, squareTo))
+            //             score -= dangerSquareScore/1.4;
+            //     }
+            //     else if (pieceType == R) {
+            //         if (get_bit(threatenedByMinor, squareFrom))
+            //             score += dangerSquareScore/1.2;
+            //         if (get_bit(threatenedByMinor, squareTo))
+            //             score -= dangerSquareScore/1.2;
+            //     }
+            //     else if (pieceType == Q)
+            //     {
+            //         if (get_bit(threatenedByRook, squareFrom))
+            //             score += dangerSquareScore;
+            //         if (get_bit(threatenedByRook, squareTo))
+            //             score -= dangerSquareScore;
+            //     }
+            // }
         }
     }
 
