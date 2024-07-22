@@ -553,6 +553,9 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
 
             // Late move reduction (LMR)
             else {
+
+                int newDepth = depth;
+                bool doFullSearch = true;
                 // condition to consider late move reduction (LMR)
                 if ((moveCount >= 2 + 2*improving) && (depth >= 3) && is_ok_to_reduce) {
 
@@ -570,21 +573,21 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                     R = std::min(depth - 1, std::max(1, R)); // make sure we don't end up in quiescence
 
                     evaluation = -search(depth - R, -alpha - 1, -alpha, ss + 1); // search move with a reduced search
+
+                    doFullSearch = evaluation > alpha;
+                    bool deeper = evaluation > (alpha + 70 + 12*(newDepth-R));
+                    newDepth += deeper;
                 }
 
-                else
-                    // hack to ensure that full search is done
-                    evaluation = alpha + 1;
-
                 // Principle variation search (PVS)
-                if (evaluation > alpha) {
+                if (doFullSearch) {
                     //  https://web.archive.org/web/20071030220825/http://www.brucemo.com/compchess/programming/pvs.htm
                     //  principle variation search optimization
                     /*  Once you've found a move with a score that is between alpha and beta,
                         the rest of the moves are searched with the goal of proving that they are all bad.
                         It's possible to do this a bit faster than a search that worries that one
                         of the remaining moves might be good. */
-                    evaluation = -search(depth - 1, -alpha - 1, -alpha, ss + 1);
+                    evaluation = -search(newDepth - 1, -alpha - 1, -alpha, ss + 1);
                     /*  If the algorithm finds out that it was wrong, and that one of the
                         subsequent moves was better than the first PV move, it has to search again,
                         in the normal alpha-beta manner.  This happens sometimes, and it's a waste of time,
@@ -592,7 +595,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                         "bad move proof" search referred to earlier. */
                     if ((evaluation > alpha) && (evaluation < beta))
                         // research the move  that has failed to be proved to be bad
-                        evaluation = -search(depth - 1, -beta, -alpha, ss + 1);
+                        evaluation = -search(newDepth - 1, -beta, -alpha, ss + 1);
                 }
             }
 
