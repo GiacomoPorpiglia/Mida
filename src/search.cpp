@@ -554,7 +554,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
             // Late move reduction (LMR)
             else {
                 // condition to consider late move reduction (LMR)
-                if ((moveCount >= 3 + improving) && (depth >= 3) && is_ok_to_reduce) {
+                if ((moveCount >= 2 + 2*improving) && (depth >= 3) && is_ok_to_reduce) {
 
                     int R = LMR_table[std::min(depth, 63)][std::min(moveCount, 63)];
 
