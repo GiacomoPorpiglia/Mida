@@ -511,7 +511,7 @@ static inline int search(int depth, int alpha, int beta, SearchStack* ss) {
                 if the move is quiet and the position has low potential 
                 of raising alpha, we can skip all following quiet moves
                 */
-                if (LMRdepth <= 6 && (static_eval + 215 + 70 * depth) <= alpha) {
+                if (LMRdepth <= 8 && (static_eval + 215 + 70 * depth) <= alpha) {
                     skip_quiet_moves = true;
                 }
 
